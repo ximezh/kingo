@@ -1,0 +1,44 @@
+.kg {
+  /* Variables de color modo claro (idénticas a la referencia) */
+  --bg: #FFFFFF;
+  --bg2: #FBF8F5;
+  --sf: #FFFFFF;
+  --bd: #ECE5DE;
+  --tx: #1F1A17;
+  --tx2: #6B625B;
+  --ac: #F26A1B;
+  --acs: #FFF1E8;
+  --act: #A63E05;
+  --btn: #C94C08;
+  --ok: #2F7D4F;
+  --oks: #E8F5EC;
+
+  /* Valores repetidos de la referencia pasados a variables CSS con su mismo valor exacto */
+  --font-family: 'Poppins', system-ui, sans-serif;
+  --side-bg: #CF520A;
+  --side-w: 226px;
+  --canvas-desktop-w: 1180px;
+  --canvas-desktop-h: 720px;
+  --canvas-mobile-w: 390px;
+  --canvas-mobile-h: 844px;
+  --control-h: 44px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-14: 14px;
+  --radius-16: 16px;
+  --radius-18: 18px;
+}
+
+.kg.dark {
+  /* Variables de color modo oscuro (idénticas a la referencia) */
+  --bg: #0D0D0D;
+  --bg2: #141414;
+  --sf: #181818;
+  --bd: #2B2B2B;
+  --tx: #F5F5F5;
+  --tx2: #A8A8A8;
+  --acs: #2A1B12;
+  --act: #FFB486;
+  --ok: #7FD39F;
+  --oks: #14261B;
+}

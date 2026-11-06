@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Selección de reporte</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&amp;display=swap">
+<style>
+body{background:#F3F0EC}
+
+body{margin:0}
+.kg{--bg:#FFFFFF;--bg2:#FBF8F5;--sf:#FFFFFF;--bd:#ECE5DE;--tx:#1F1A17;--tx2:#6B625B;--ac:#F26A1B;--acs:#FFF1E8;--act:#A63E05;--btn:#C94C08;--ok:#2F7D4F;--oks:#E8F5EC;font-family:'Poppins',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;box-sizing:border-box;overflow:hidden}
+.kg.dark{--bg:#0D0D0D;--bg2:#141414;--sf:#181818;--bd:#2B2B2B;--tx:#F5F5F5;--tx2:#A8A8A8;--acs:#2A1B12;--act:#FFB486;--ok:#7FD39F;--oks:#14261B}
+.kg *{box-sizing:border-box}
+.kg h1,.kg h2,.kg h3,.kg p{margin:0}
+.side{width:226px;flex:none;background:var(--bg2);border-right:1px solid var(--bd);padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--tx2);text-decoration:none}
+.nav i{width:6px;height:6px;border-radius:50%;background:var(--bd)}
+.nav.on{background:var(--acs);color:var(--act)}
+.nav.on i{background:var(--ac)}
+.side{background:#CF520A;border-right:0;color:#fff}
+.side .sub{color:rgba(255,255,255,.88)!important}
+.side .nav{color:#fff}
+.side .nav i{background:rgba(255,255,255,.55)}
+.side .nav.on{background:#fff;color:#A63E05}
+.side .nav.on i{background:#F26A1B}
+.side>.row:first-child>div:first-child{background:#fff!important;color:#CF520A!important}
+.side>.row:last-child>div:first-child{background:rgba(255,255,255,.22)!important;color:#fff!important}
+.main{flex:1;min-width:0;padding:26px 32px;display:flex;flex-direction:column;gap:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 22px;border-radius:10px;border:1px solid transparent;font:500 14px 'Poppins',sans-serif;cursor:pointer;text-decoration:none}
+.btn.p{background:var(--btn);color:#fff}
+.btn.s{background:var(--sf);color:var(--tx);border-color:var(--bd)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.opt{flex:1;display:flex;flex-direction:column;gap:8px;padding:18px;border:1px solid var(--bd);border-radius:14px;background:var(--sf)}
+.opt.on{border-color:var(--btn);background:var(--acs)}
+.rad{width:18px;height:18px;border-radius:50%;border:2px solid var(--bd);flex:none}
+.opt.on .rad{border-color:var(--btn);background:radial-gradient(circle, var(--btn) 45%, transparent 50%)}
+.ico{width:40px;height:40px;border-radius:10px;background:var(--acs);color:var(--act);display:flex;align-items:center;justify-content:center}
+.opt.on .ico{background:var(--sf)}
+.chip{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:18px;border:1px solid var(--bd);background:var(--sf);font-size:13px;font-weight:500;color:var(--tx2);text-decoration:none}
+.chip.on{background:var(--btn);border-color:var(--btn);color:#fff}
+.lbl{display:block;font-size:12px;font-weight:500;color:var(--tx2);margin-bottom:6px}
+.inp{width:100%;height:44px;border:1px solid var(--bd);border-radius:10px;padding:0 14px;background:var(--sf);color:var(--tx);font:400 14px 'Poppins',sans-serif}
+.row{display:flex;align-items:center;gap:12px}
+.sub{font-size:13px;color:var(--tx2)}
+</style>
+</head>
+<body>
+<div class="kg" style="width:1180px;height:720px">
+<aside class="side">
+<div class="row" style="padding:4px 8px 20px"><div style="width:34px;height:34px;border-radius:10px;background:#F26A1B;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center">K</div><div style="font-weight:600;font-size:18px">KinGo</div></div>
+<a class="nav" href="02-Principal.html"><i></i>Inicio</a>
+<a class="nav" href="03-Productos.html"><i></i>Productos</a>
+<a class="nav" href="07-Paquetes.html"><i></i>Paquetes</a>
+<a class="nav" href="08-Promociones.html"><i></i>Promociones</a>
+<a class="nav" href="14-Historial.html"><i></i>Historial</a>
+<a class="nav on" href="18-Reporte-seleccion.html"><i></i>Reportes</a>
+<div style="flex:1"></div>
+<div class="row" style="padding:10px 8px"><div style="width:34px;height:34px;border-radius:50%;background:var(--acs);color:var(--act);font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">AD</div><div><div style="font-size:13px;font-weight:500">Administrador</div><div class="sub" style="font-size:12px">Cerrar sesión</div></div></div>
+</aside>
+<main class="main">
+<div style="display:flex;flex-direction:column;gap:4px">
+<h1 style="font-size:22px;font-weight:600">Reportes</h1>
+<p class="sub">Elige qué quieres consultar y de qué fechas.</p>
+</div>
+<section class="card">
+<h2 style="font-size:16px;font-weight:600">1. Tipo de reporte</h2>
+<div style="display:flex;gap:16px">
+<div class="opt on">
+<div class="row" style="justify-content:space-between"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span><span class="rad"></span></div>
+<span style="font-size:15px;font-weight:600">Ventas por periodo</span>
+<span class="sub">Total vendido por día y cantidad de pedidos.</span>
+</div>
+<div class="opt">
+<div class="row" style="justify-content:space-between"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg></span><span class="rad"></span></div>
+<span style="font-size:15px;font-weight:600">Productos más vendidos</span>
+<span class="sub">Ranking de productos y paquetes por piezas.</span>
+</div>
+<div class="opt">
+<div class="row" style="justify-content:space-between"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"></path><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"></path></svg></span><span class="rad"></span></div>
+<span style="font-size:15px;font-weight:600">Ventas por tipo de pedido</span>
+<span class="sub">Comparativo entre local, para llevar y domicilio.</span>
+</div>
+</div>
+</section>
+<section class="card">
+<h2 style="font-size:16px;font-weight:600">2. Periodo</h2>
+<div style="display:flex;gap:8px"><a class="chip" href="#">Hoy</a><a class="chip on" href="#">Esta semana</a><a class="chip" href="#">Este mes</a><a class="chip" href="#">Personalizado</a></div>
+<div style="display:flex;gap:16px;max-width:520px">
+<div style="flex:1"><label class="lbl" for="d1">Desde</label><input class="inp" id="d1" type="text" value="19 oct 2026"></div>
+<div style="flex:1"><label class="lbl" for="d2">Hasta</label><input class="inp" id="d2" type="text" value="25 oct 2026"></div>
+</div>
+</section>
+<div class="row" style="justify-content:flex-end;gap:12px">
+<a class="btn s" href="02-Principal.html">Cancelar</a>
+<a class="btn p" href="19-Reporte-resultado.html">Generar reporte</a>
+</div>
+</main>
+</div>
+<script>
+(function(){
+var q=new URLSearchParams(location.search);
+var kg=document.querySelector('.kg');
+if(q.get('modo')==='oscuro'){kg.classList.add('dark');document.body.style.background='#0D0D0D';}
+var rol=q.get('rol')==='admin'?'admin':'cajero';
+var tipo=['local','llevar','domicilio'].indexOf(q.get('tipo'))>-1?q.get('tipo'):'domicilio';
+document.querySelectorAll('[data-if]').forEach(function(e){var k=e.getAttribute('data-if');var on=(k==='admin'||k==='cajero')?k===rol:k===tipo;e.style.display=on?'contents':'none';});
+var R={admin:['AD','Administrador'],cajero:['CJ','Cajero']};
+document.querySelectorAll('[data-rol-ini]').forEach(function(e){e.textContent=R[rol][0];});
+document.querySelectorAll('[data-rol-name]').forEach(function(e){e.textContent=R[rol][1];});
+var T={local:['En local','Mesa del cliente'],llevar:['Para llevar','Datos de recolecci\u00f3n'],domicilio:['A domicilio','Datos de entrega']};
+document.querySelectorAll('[data-tipo]').forEach(function(e){e.textContent=T[tipo][0];});
+document.querySelectorAll('[data-titulo]').forEach(function(e){e.textContent=T[tipo][1];});
+document.querySelectorAll('a[href]').forEach(function(a){
+ var h=a.getAttribute('href');
+ if(!/^\d\d-.*\.html$/.test(h))return;
+ var p=[];if(q.get('modo'))p.push('modo='+q.get('modo'));if(q.get('rol'))p.push('rol='+q.get('rol'));
+ var t=a.getAttribute('data-tipo-link');if(t)p.push('tipo='+t);else if(q.get('tipo'))p.push('tipo='+q.get('tipo'));
+ if(p.length)a.setAttribute('href',h+'?'+p.join('&'));
+});
+})();
+</script>
+</body>
+</html>

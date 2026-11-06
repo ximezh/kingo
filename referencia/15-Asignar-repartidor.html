@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Asignación de repartidor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&amp;display=swap">
+<style>
+body{background:#F3F0EC}
+
+body{margin:0}
+.kg{--bg:#FFFFFF;--bg2:#FBF8F5;--sf:#FFFFFF;--bd:#ECE5DE;--tx:#1F1A17;--tx2:#6B625B;--ac:#F26A1B;--acs:#FFF1E8;--act:#A63E05;--btn:#C94C08;--ok:#2F7D4F;--oks:#E8F5EC;font-family:'Poppins',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;box-sizing:border-box;overflow:hidden}
+.kg.dark{--bg:#0D0D0D;--bg2:#141414;--sf:#181818;--bd:#2B2B2B;--tx:#F5F5F5;--tx2:#A8A8A8;--acs:#2A1B12;--act:#FFB486;--ok:#7FD39F;--oks:#14261B}
+.kg *{box-sizing:border-box}
+.kg h1,.kg h2,.kg h3,.kg p{margin:0}
+.side{width:226px;flex:none;background:var(--bg2);border-right:1px solid var(--bd);padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--tx2);text-decoration:none}
+.nav i{width:6px;height:6px;border-radius:50%;background:var(--bd)}
+.nav.on{background:var(--acs);color:var(--act)}
+.nav.on i{background:var(--ac)}
+.side{background:#CF520A;border-right:0;color:#fff}
+.side .sub{color:rgba(255,255,255,.88)!important}
+.side .nav{color:#fff}
+.side .nav i{background:rgba(255,255,255,.55)}
+.side .nav.on{background:#fff;color:#A63E05}
+.side .nav.on i{background:#F26A1B}
+.side>.row:first-child>div:first-child{background:#fff!important;color:#CF520A!important}
+.side>.row:last-child>div:first-child{background:rgba(255,255,255,.22)!important;color:#fff!important}
+.main{flex:1;min-width:0;padding:26px 32px;display:flex;flex-direction:column;gap:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:10px;border:1px solid transparent;font:500 14px 'Poppins',sans-serif;cursor:pointer;text-decoration:none}
+.btn.p{background:var(--btn);color:#fff}
+.btn.s{background:var(--sf);color:var(--tx);border-color:var(--bd)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.ord{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--bd);border-radius:12px;font-size:14px}
+.ord.on{border-color:var(--btn);background:var(--acs)}
+.rep{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--bd);border-radius:12px;font-size:14px}
+.rep.on{border-color:var(--btn);background:var(--acs)}
+.av{width:40px;height:40px;border-radius:50%;background:var(--acs);color:var(--act);font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.rep.on .av{background:var(--sf)}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;background:var(--acs);color:var(--act);font-size:12px;font-weight:500}
+.tag.ok{background:var(--oks);color:var(--ok)}
+.tag.off{background:var(--bg2);color:var(--tx2);border:1px solid var(--bd)}
+.row{display:flex;align-items:center;gap:12px}
+.sub{font-size:13px;color:var(--tx2)}
+</style>
+</head>
+<body>
+<div class="kg" style="width:1180px;height:720px">
+<aside class="side">
+<div class="row" style="padding:4px 8px 20px"><div style="width:34px;height:34px;border-radius:10px;background:#F26A1B;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center">K</div><div style="font-weight:600;font-size:18px">KinGo</div></div>
+<a class="nav" href="02-Principal.html"><i></i>Inicio</a>
+<a class="nav" href="10-Venta-tipo.html"><i></i>Nueva venta</a>
+<a class="nav on" href="15-Asignar-repartidor.html"><i></i>Domicilios</a>
+<a class="nav" href="03-Productos.html"><i></i>Catálogo</a>
+<a class="nav" href="14-Historial.html"><i></i>Historial</a>
+<div style="flex:1"></div>
+<div class="row" style="padding:10px 8px"><div style="width:34px;height:34px;border-radius:50%;background:var(--acs);color:var(--act);font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">CJ</div><div><div style="font-size:13px;font-weight:500">Cajero</div><div class="sub" style="font-size:12px">Cerrar sesión</div></div></div>
+</aside>
+<main class="main">
+<div style="display:flex;flex-direction:column;gap:4px">
+<h1 style="font-size:22px;font-weight:600">Pedidos a domicilio</h1>
+<p class="sub">Elige un pedido pendiente y asígnale un repartidor.</p>
+</div>
+<div style="display:flex;gap:20px;align-items:flex-start">
+<section class="card" style="flex:1;min-width:0">
+<div class="row" style="justify-content:space-between"><h2 style="font-size:16px;font-weight:600">Por asignar</h2><span class="tag">3 pendientes</span></div>
+<div class="ord on"><div class="row" style="justify-content:space-between"><span style="font-weight:600">#0143 · Laura Méndez</span><span style="font-weight:600">$345</span></div><span class="sub">229 000 0000 · [Dirección capturada]</span><span class="sub">Referencia: [Referencia capturada]</span></div>
+<div class="ord"><div class="row" style="justify-content:space-between"><span style="font-weight:600">#0144 · Rosa V.</span><span style="font-weight:600">$280</span></div><span class="sub">229 000 0000 · [Dirección capturada]</span></div>
+<div class="ord"><div class="row" style="justify-content:space-between"><span style="font-weight:600">#0145 · Jorge H.</span><span style="font-weight:600">$195</span></div><span class="sub">229 000 0000 · [Dirección capturada]</span></div>
+</section>
+<aside class="card" style="width:400px;flex:none;gap:12px">
+<h2 style="font-size:16px;font-weight:600">Asignar a #0143</h2>
+<div class="rep on"><span class="av">CR</span><div style="flex:1"><div style="font-weight:600">Carlos R.</div><div class="sub">Sin pedidos en ruta</div></div><span class="tag ok">Disponible</span></div>
+<div class="rep"><span class="av">MA</span><div style="flex:1"><div style="font-weight:600">Miguel A.</div><div class="sub">1 pedido en ruta</div></div><span class="tag off">En ruta</span></div>
+<div class="rep"><span class="av">DS</span><div style="flex:1"><div style="font-weight:600">Daniel S.</div><div class="sub">Sin pedidos en ruta</div></div><span class="tag ok">Disponible</span></div>
+<div style="padding-top:6px;display:flex;flex-direction:column;gap:10px">
+<a class="btn p" href="14-Historial.html">Asignar a Carlos R.</a>
+<a class="btn s" href="15-Asignar-repartidor.html">Cancelar</a>
+</div>
+</aside>
+</div>
+</main>
+</div>
+<script>
+(function(){
+var q=new URLSearchParams(location.search);
+var kg=document.querySelector('.kg');
+if(q.get('modo')==='oscuro'){kg.classList.add('dark');document.body.style.background='#0D0D0D';}
+var rol=q.get('rol')==='admin'?'admin':'cajero';
+var tipo=['local','llevar','domicilio'].indexOf(q.get('tipo'))>-1?q.get('tipo'):'domicilio';
+document.querySelectorAll('[data-if]').forEach(function(e){var k=e.getAttribute('data-if');var on=(k==='admin'||k==='cajero')?k===rol:k===tipo;e.style.display=on?'contents':'none';});
+var R={admin:['AD','Administrador'],cajero:['CJ','Cajero']};
+document.querySelectorAll('[data-rol-ini]').forEach(function(e){e.textContent=R[rol][0];});
+document.querySelectorAll('[data-rol-name]').forEach(function(e){e.textContent=R[rol][1];});
+var T={local:['En local','Mesa del cliente'],llevar:['Para llevar','Datos de recolecci\u00f3n'],domicilio:['A domicilio','Datos de entrega']};
+document.querySelectorAll('[data-tipo]').forEach(function(e){e.textContent=T[tipo][0];});
+document.querySelectorAll('[data-titulo]').forEach(function(e){e.textContent=T[tipo][1];});
+document.querySelectorAll('a[href]').forEach(function(a){
+ var h=a.getAttribute('href');
+ if(!/^\d\d-.*\.html$/.test(h))return;
+ var p=[];if(q.get('modo'))p.push('modo='+q.get('modo'));if(q.get('rol'))p.push('rol='+q.get('rol'));
+ var t=a.getAttribute('data-tipo-link');if(t)p.push('tipo='+t);else if(q.get('tipo'))p.push('tipo='+q.get('tipo'));
+ if(p.length)a.setAttribute('href',h+'?'+p.join('&'));
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Listado de promociones</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&amp;display=swap">
+<style>
+body{background:#F3F0EC}
+
+body{margin:0}
+.kg{--bg:#FFFFFF;--bg2:#FBF8F5;--sf:#FFFFFF;--bd:#ECE5DE;--tx:#1F1A17;--tx2:#6B625B;--ac:#F26A1B;--acs:#FFF1E8;--act:#A63E05;--btn:#C94C08;--ok:#2F7D4F;--oks:#E8F5EC;font-family:'Poppins',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;box-sizing:border-box;overflow:hidden}
+.kg.dark{--bg:#0D0D0D;--bg2:#141414;--sf:#181818;--bd:#2B2B2B;--tx:#F5F5F5;--tx2:#A8A8A8;--acs:#2A1B12;--act:#FFB486;--ok:#7FD39F;--oks:#14261B}
+.kg *{box-sizing:border-box}
+.kg h1,.kg h2,.kg h3,.kg p{margin:0}
+.side{width:226px;flex:none;background:var(--bg2);border-right:1px solid var(--bd);padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--tx2);text-decoration:none}
+.nav i{width:6px;height:6px;border-radius:50%;background:var(--bd)}
+.nav.on{background:var(--acs);color:var(--act)}
+.nav.on i{background:var(--ac)}
+.side{background:#CF520A;border-right:0;color:#fff}
+.side .sub{color:rgba(255,255,255,.88)!important}
+.side .nav{color:#fff}
+.side .nav i{background:rgba(255,255,255,.55)}
+.side .nav.on{background:#fff;color:#A63E05}
+.side .nav.on i{background:#F26A1B}
+.side>.row:first-child>div:first-child{background:#fff!important;color:#CF520A!important}
+.side>.row:last-child>div:first-child{background:rgba(255,255,255,.22)!important;color:#fff!important}
+.main{flex:1;min-width:0;padding:26px 32px;display:flex;flex-direction:column;gap:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:10px;border:1px solid transparent;font:500 14px 'Poppins',sans-serif;cursor:pointer;text-decoration:none}
+.btn.p{background:var(--btn);color:#fff}
+.btn.s{background:var(--sf);color:var(--tx);border-color:var(--bd)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--bd);background:var(--sf);font-size:13px;font-weight:500;color:var(--tx2);text-decoration:none}
+.chip.on{background:var(--btn);border-color:var(--btn);color:#fff}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;background:var(--acs);color:var(--act);font-size:12px;font-weight:500}
+.tag.ok{background:var(--oks);color:var(--ok)}
+.tag.off{background:var(--bg2);color:var(--tx2);border:1px solid var(--bd)}
+.th,.tr{display:grid;grid-template-columns:1.6fr 1.1fr 1.3fr 1.1fr 0.8fr 0.6fr;gap:12px;align-items:center;padding:0 22px}
+.th{height:44px;background:var(--bg2);font-size:12px;font-weight:500;color:var(--tx2);border-bottom:1px solid var(--bd)}
+.tr{height:62px;font-size:14px;border-bottom:1px solid var(--bd)}
+.tr:last-child{border-bottom:0}
+.edit{font-size:13px;font-weight:500;color:var(--act);text-decoration:none}
+.row{display:flex;align-items:center;gap:12px}
+.sub{font-size:13px;color:var(--tx2)}
+</style>
+</head>
+<body>
+<div class="kg" style="width:1180px;height:720px">
+<aside class="side">
+<div class="row" style="padding:4px 8px 20px"><div style="width:34px;height:34px;border-radius:10px;background:#F26A1B;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center">K</div><div style="font-weight:600;font-size:18px">KinGo</div></div>
+<a class="nav" href="02-Principal.html"><i></i>Inicio</a>
+<a class="nav" href="03-Productos.html"><i></i>Productos</a>
+<a class="nav" href="07-Paquetes.html"><i></i>Paquetes</a>
+<a class="nav on" href="08-Promociones.html"><i></i>Promociones</a>
+<a class="nav" href="14-Historial.html"><i></i>Historial</a>
+<a class="nav" href="18-Reporte-seleccion.html"><i></i>Reportes</a>
+<div style="flex:1"></div>
+<div class="row" style="padding:10px 8px"><div style="width:34px;height:34px;border-radius:50%;background:var(--acs);color:var(--act);font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">AD</div><div><div style="font-size:13px;font-weight:500">Administrador</div><div class="sub" style="font-size:12px">Cerrar sesión</div></div></div>
+</aside>
+<main class="main">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<h1 style="font-size:22px;font-weight:600">Promociones</h1>
+<p class="sub">Se aplican solas al registrar una venta</p>
+</div>
+<a class="btn p" href="09-Promocion-form.html">Nueva promoción</a>
+</div>
+<div style="display:flex;gap:8px">
+<a class="chip on" href="#">Todas</a>
+<a class="chip" href="#">Activas</a>
+<a class="chip" href="#">Inactivas</a>
+</div>
+<section class="card">
+<div class="th"><span>Promoción</span><span>Día</span><span>Descuento</span><span>Vigencia</span><span>Estado</span><span></span></div>
+<div class="tr"><span style="font-weight:500">Martes de 2x1</span><span>Martes</span><span>2x1 en rollos seleccionados</span><span class="sub">Sin fecha final</span><span><span class="tag ok">Activa</span></span><a class="edit" href="09-Promocion-form.html">Editar</a></div>
+<div class="tr"><span style="font-weight:500">Combos con descuento</span><span>Jueves</span><span>10% en paquetes</span><span class="sub">Sin fecha final</span><span><span class="tag ok">Activa</span></span><a class="edit" href="09-Promocion-form.html">Editar</a></div>
+<div class="tr"><span style="font-weight:500">Especial de fin de semana</span><span>Sáb y dom</span><span>Precio especial en combos</span><span class="sub">Hasta 30 nov</span><span><span class="tag ok">Activa</span></span><a class="edit" href="09-Promocion-form.html">Editar</a></div>
+<div class="tr"><span style="font-weight:500">Paga 4, lleva 5</span><span>Todos los días</span><span>Regla del Paquete Sushi</span><span class="sub">Sin fecha final</span><span><span class="tag ok">Activa</span></span><a class="edit" href="07-Paquetes.html">Ver</a></div>
+<div class="tr"><span style="font-weight:500">Postre gratis</span><span>Viernes</span><span>Postre en compras desde $400</span><span class="sub">Terminó 31 ago</span><span><span class="tag off">Inactiva</span></span><a class="edit" href="09-Promocion-form.html">Editar</a></div>
+</section>
+</main>
+</div>
+<script>
+(function(){
+var q=new URLSearchParams(location.search);
+var kg=document.querySelector('.kg');
+if(q.get('modo')==='oscuro'){kg.classList.add('dark');document.body.style.background='#0D0D0D';}
+var rol=q.get('rol')==='admin'?'admin':'cajero';
+var tipo=['local','llevar','domicilio'].indexOf(q.get('tipo'))>-1?q.get('tipo'):'domicilio';
+document.querySelectorAll('[data-if]').forEach(function(e){var k=e.getAttribute('data-if');var on=(k==='admin'||k==='cajero')?k===rol:k===tipo;e.style.display=on?'contents':'none';});
+var R={admin:['AD','Administrador'],cajero:['CJ','Cajero']};
+document.querySelectorAll('[data-rol-ini]').forEach(function(e){e.textContent=R[rol][0];});
+document.querySelectorAll('[data-rol-name]').forEach(function(e){e.textContent=R[rol][1];});
+var T={local:['En local','Mesa del cliente'],llevar:['Para llevar','Datos de recolecci\u00f3n'],domicilio:['A domicilio','Datos de entrega']};
+document.querySelectorAll('[data-tipo]').forEach(function(e){e.textContent=T[tipo][0];});
+document.querySelectorAll('[data-titulo]').forEach(function(e){e.textContent=T[tipo][1];});
+document.querySelectorAll('a[href]').forEach(function(a){
+ var h=a.getAttribute('href');
+ if(!/^\d\d-.*\.html$/.test(h))return;
+ var p=[];if(q.get('modo'))p.push('modo='+q.get('modo'));if(q.get('rol'))p.push('rol='+q.get('rol'));
+ var t=a.getAttribute('data-tipo-link');if(t)p.push('tipo='+t);else if(q.get('tipo'))p.push('tipo='+q.get('tipo'));
+ if(p.length)a.setAttribute('href',h+'?'+p.join('&'));
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<script setup>
+import StatusTag from '@/components/ui/StatusTag.vue'
+
+defineProps({
+  ventas: {
+    type: Array,
+    required: true
+  }
+})
+</script>
+
+<template>
+  <section class="card" style="padding:0;gap:0;overflow:hidden">
+    <div class="th">
+      <span>Folio</span>
+      <span>Fecha y hora</span>
+      <span>Tipo</span>
+      <span>Cliente o mesa</span>
+      <span>Pago</span>
+      <span>Total</span>
+      <span>Estado</span>
+    </div>
+    <div v-for="v in ventas" :key="v.folio" class="tr">
+      <span style="font-weight:500">{{ v.folio }}</span>
+      <span class="sub">{{ v.fechaHora }}</span>
+      <span>{{ v.tipo }}</span>
+      <span>{{ v.clienteMesa }}</span>
+      <span>{{ v.pago }}</span>
+      <span style="font-weight:600">{{ v.total }}</span>
+      <span>
+        <StatusTag :variant="v.estadoVariant">{{ v.estado }}</StatusTag>
+      </span>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.th,
+.tr {
+  display: grid;
+  grid-template-columns: 0.7fr 1.2fr 1fr 1.2fr 1fr 0.8fr 1.1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 0 22px;
+}
+
+.th {
+  height: 44px;
+  background: var(--bg2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx2);
+  border-bottom: 1px solid var(--bd);
+}
+
+.tr {
+  height: 56px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--bd);
+}
+
+.tr:last-child {
+  border-bottom: 0;
+}
+</style>

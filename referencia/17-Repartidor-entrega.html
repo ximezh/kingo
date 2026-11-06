@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confirmación de entrega</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+<style>
+body{background:#F3F0EC}
+
+body{margin:0}
+.kg{--bg:#FFFFFF;--bg2:#FBF8F5;--sf:#FFFFFF;--bd:#ECE5DE;--tx:#1F1A17;--tx2:#6B625B;--ac:#F26A1B;--acs:#FFF1E8;--act:#A63E05;--btn:#C94C08;--ok:#2F7D4F;--oks:#E8F5EC;font-family:'Poppins',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden}
+.kg.dark{--bg:#0D0D0D;--bg2:#141414;--sf:#181818;--bd:#2B2B2B;--tx:#F5F5F5;--tx2:#A8A8A8;--acs:#2A1B12;--act:#FFB486;--ok:#7FD39F;--oks:#14261B}
+.kg *{box-sizing:border-box}
+.kg h1,.kg h2,.kg h3,.kg p{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 20px;border-radius:12px;border:1px solid transparent;font:500 15px 'Poppins',sans-serif;cursor:pointer;text-decoration:none}
+.btn.p{background:var(--btn);color:#fff}
+.btn.s{background:var(--sf);color:var(--tx);border-color:var(--bd)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.lbl{display:block;font-size:12px;font-weight:500;color:var(--tx2);margin-bottom:6px}
+.inp{width:100%;height:46px;border:1px solid var(--bd);border-radius:12px;padding:0 14px;background:var(--sf);color:var(--tx);font:400 14px 'Poppins',sans-serif}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:12px;background:var(--acs);color:var(--act);font-size:12px;font-weight:500}
+.ln{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.row{display:flex;align-items:center;gap:12px}
+.sub{font-size:13px;color:var(--tx2)}
+</style>
+</head>
+<body>
+<div class="kg" style="width:390px;height:844px">
+<div style="padding:28px 20px 16px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;flex-direction:column;gap:6px">
+<a href="16-Repartidor-pedidos.html" style="font-size:13px;font-weight:500;color:var(--act);text-decoration:none">Volver a mis pedidos</a>
+<div class="row" style="justify-content:space-between"><h1 style="font-size:20px;font-weight:600">Pedido #0143</h1><span class="tag">Por entregar</span></div>
+</div>
+<div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;flex:1">
+<section class="card">
+<div class="row" style="justify-content:space-between"><span style="font-size:15px;font-weight:600">Laura Méndez</span><a href="#" style="font-size:13px;font-weight:500;color:var(--act);text-decoration:none">Llamar</a></div>
+<div class="sub">229 000 0000</div>
+<div style="font-size:14px;line-height:1.5">[Dirección completa]</div>
+<div class="sub">Referencia: [Casa de rejas negras]</div>
+</section>
+<section class="card">
+<div class="ln"><span>2 × Tampico Roll</span><span style="font-weight:500">$240</span></div>
+<div class="ln" style="color:var(--act);font-weight:500"><span>Martes de 2x1</span><span>-$120</span></div>
+<div class="ln"><span>Té verde, grande</span><span style="font-weight:500">$70</span></div>
+<div class="ln"><span>Yakimeshi sencillo + camarón</span><span style="font-weight:500">$120</span></div>
+<div class="ln"><span class="sub">Envío</span><span style="font-weight:500">$35</span></div>
+<div style="height:1px;background:var(--bd);margin:4px 0"></div>
+<div class="ln" style="font-size:16px;font-weight:600"><span>Total · Efectivo</span><span>$345</span></div>
+</section>
+<div>
+<label class="lbl" for="mot">Si no se entregó, indica el motivo</label>
+<select class="inp" id="mot"><option>Selecciona un motivo</option><option>El cliente no estaba</option></select>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-bottom:6px">
+<a class="btn p" href="16-Repartidor-pedidos.html">Marcar como entregado</a>
+<a class="btn s" href="16-Repartidor-pedidos.html">No se pudo entregar</a>
+</div>
+</div>
+</div>
+<script>
+(function(){
+var q=new URLSearchParams(location.search);
+var kg=document.querySelector('.kg');
+if(q.get('modo')==='oscuro'){kg.classList.add('dark');document.body.style.background='#0D0D0D';}
+var rol=q.get('rol')==='admin'?'admin':'cajero';
+var tipo=['local','llevar','domicilio'].indexOf(q.get('tipo'))>-1?q.get('tipo'):'domicilio';
+document.querySelectorAll('[data-if]').forEach(function(e){var k=e.getAttribute('data-if');var on=(k==='admin'||k==='cajero')?k===rol:k===tipo;e.style.display=on?'contents':'none';});
+var R={admin:['AD','Administrador'],cajero:['CJ','Cajero']};
+document.querySelectorAll('[data-rol-ini]').forEach(function(e){e.textContent=R[rol][0];});
+document.querySelectorAll('[data-rol-name]').forEach(function(e){e.textContent=R[rol][1];});
+var T={local:['En local','Mesa del cliente'],llevar:['Para llevar','Datos de recolecci\u00f3n'],domicilio:['A domicilio','Datos de entrega']};
+document.querySelectorAll('[data-tipo]').forEach(function(e){e.textContent=T[tipo][0];});
+document.querySelectorAll('[data-titulo]').forEach(function(e){e.textContent=T[tipo][1];});
+document.querySelectorAll('a[href]').forEach(function(a){
+ var h=a.getAttribute('href');
+ if(!/^\d\d-.*\.html$/.test(h))return;
+ var p=[];if(q.get('modo'))p.push('modo='+q.get('modo'));if(q.get('rol'))p.push('rol='+q.get('rol'));
+ var t=a.getAttribute('data-tipo-link');if(t)p.push('tipo='+t);else if(q.get('tipo'))p.push('tipo='+q.get('tipo'));
+ if(p.length)a.setAttribute('href',h+'?'+p.join('&'));
+});
+})();
+</script>
+</body>
+</html>
