@@ -64,13 +64,3 @@ Iniciar el servidor backend y el servidor de desarrollo frontend en dos terminal
   ```
 
 ---
-
-## Cuentas Iniciales del Sistema
-
-Contraseña inicial configurada en el archivo semilla: `123` (o `123456`).
-
-| Rol | Usuario | Nombre |
-| --- | --- | --- |
-| Administrador | `admin` | Laura Gómez |
-| Cajero | `cajero` | Sofía Ramírez |
-| Repartidor | `repartidor` | Carlos R. |
