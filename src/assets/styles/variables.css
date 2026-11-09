@@ -1,11 +1,11 @@
 .kg {
-  /* Variables de color modo claro (idénticas a la referencia) */
-  --bg: #FFFFFF;
-  --bg2: #FBF8F5;
+  /* Variables de color modo claro con bordes y superficies de alto contraste visual */
+  --bg: #FAF7F4;
+  --bg2: #F2ECE5;
   --sf: #FFFFFF;
-  --bd: #ECE5DE;
+  --bd: #CFC4B8;
   --tx: #1F1A17;
-  --tx2: #6B625B;
+  --tx2: #574E47;
   --ac: #F26A1B;
   --acs: #FFF1E8;
   --act: #A63E05;
@@ -30,13 +30,13 @@
 }
 
 .kg.dark {
-  /* Variables de color modo oscuro (idénticas a la referencia) */
+  /* Variables de color modo oscuro con bordes más definidos */
   --bg: #0D0D0D;
-  --bg2: #141414;
-  --sf: #181818;
-  --bd: #2B2B2B;
+  --bg2: #161616;
+  --sf: #1E1E1E;
+  --bd: #3E3E3E;
   --tx: #F5F5F5;
-  --tx2: #A8A8A8;
+  --tx2: #B0B0B0;
   --acs: #2A1B12;
   --act: #FFB486;
   --ok: #7FD39F;

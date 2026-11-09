@@ -5,17 +5,17 @@ export const TIPOS_REPORTE_MOCK = [
   {
     id: 'ventas_periodo',
     titulo: 'Ventas por periodo',
-    descripcion: 'Total vendido por día y cantidad de pedidos.'
+    descripcion: 'Ingresos y pedidos por día'
   },
   {
     id: 'productos_mas_vendidos',
     titulo: 'Productos más vendidos',
-    descripcion: 'Ranking de productos y paquetes por piezas.'
+    descripcion: 'Ranking por unidades'
   },
   {
     id: 'ventas_tipo_pedido',
-    titulo: 'Ventas por tipo de pedido',
-    descripcion: 'Comparativo entre local, para llevar y domicilio.'
+    titulo: 'Ventas por modalidad',
+    descripcion: 'Local, llevar y domicilio'
   }
 ]
 

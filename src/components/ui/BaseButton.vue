@@ -5,8 +5,8 @@ import { RouterLink } from 'vue-router'
 const props = defineProps({
   variant: {
     type: String,
-    default: 'p', // 'p' (primary) | 's' (secondary)
-    validator: (v) => ['p', 's'].includes(v)
+    default: 'p', // 'p' (primary) | 's' (secondary) | 'd' (danger)
+    validator: (v) => ['p', 's', 'd'].includes(v)
   },
   to: {
     type: [String, Object],

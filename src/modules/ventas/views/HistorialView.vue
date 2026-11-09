@@ -45,9 +45,9 @@ function limpiarFiltros() {
 </script>
 
 <template>
-  <div style="display:flex;flex-direction:column;gap:4px">
+  <div class="row" style="justify-content:space-between;flex-wrap:wrap">
     <h1 style="font-size:22px;font-weight:600">Historial de ventas</h1>
-    <p class="sub">Consulta ventas anteriores por folio, cliente, fecha y tipo de pedido.</p>
+    <span class="sub">{{ ventasFiltradas.length }} registros</span>
   </div>
 
   <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
@@ -55,8 +55,8 @@ function limpiarFiltros() {
       v-model="busqueda"
       class="inp"
       type="search"
-      placeholder="Buscar por folio (#0143), cliente o mesa..."
-      style="max-width:300px"
+      placeholder="Buscar folio, cliente o mesa..."
+      style="max-width:280px"
     >
     <label for="f1" style="position:absolute;left:-9999px">Fecha</label>
     <input
@@ -100,19 +100,8 @@ function limpiarFiltros() {
       </svg>
     </div>
     <h3 style="font-size:16px;font-weight:600">
-      {{ HISTORIAL_VENTAS_MOCK.length === 0 ? 'Aún no se han registrado ventas' : 'No existen ventas con esos criterios' }}
+      {{ HISTORIAL_VENTAS_MOCK.length === 0 ? 'Sin ventas registradas' : 'Sin resultados' }}
     </h3>
-    <p class="sub">
-      <template v-if="HISTORIAL_VENTAS_MOCK.length === 0">
-        Las ventas que registres aparecerán aquí con su folio, modalidad y estado.
-      </template>
-      <template v-else>
-        No encontramos ventas para
-        <strong v-if="busqueda">"{{ busqueda }}"</strong>
-        <span v-if="filtroTipo !== 'Todos'"> en modalidad <strong>{{ filtroTipo }}</strong></span>
-        <span v-if="filtroPago !== 'Todos los pagos'"> con pago en <strong>{{ filtroPago }}</strong></span>.
-      </template>
-    </p>
     <BaseButton v-if="HISTORIAL_VENTAS_MOCK.length > 0" variant="p" href="#" @click.prevent="limpiarFiltros">
       Ver todas las ventas
     </BaseButton>

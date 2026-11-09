@@ -121,6 +121,12 @@ const routes = [
         meta: { roles: ['admin'], title: 'Historial de ventas', mainGap: '18px' }
       },
       {
+        path: 'domicilios',
+        name: 'admin-domicilios',
+        component: AsignarRepartidorView,
+        meta: { roles: ['admin'], title: 'Asignación de repartidor', mainGap: '20px' }
+      },
+      {
         path: 'reportes',
         name: 'admin-reportes',
         component: ReporteSeleccionView,

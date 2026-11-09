@@ -29,10 +29,7 @@ function chooseEmpleado(emp) {
     width="480px"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h2 style="font-size:20px;font-weight:600">Selecciona tu perfil de acceso</h2>
-      <p class="sub">Elige con qué empleado o rol deseas ingresar a KinGo (o ingresa usuario y contraseña directamente en el login).</p>
-    </div>
+    <h2 style="font-size:19px;font-weight:600">Elegir perfil</h2>
 
     <div style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:4px">
       <button
@@ -49,9 +46,9 @@ function chooseEmpleado(emp) {
         >
           {{ emp.iniciales }}
         </span>
-        <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+        <span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0">
           <span style="font-size:14px;font-weight:600">{{ emp.nombre }}</span>
-          <span class="sub" style="font-size:12px">Usuario: {{ emp.usuario }} · {{ emp.turno }}</span>
+          <span class="sub" style="font-size:12px">@{{ emp.usuario }}</span>
         </span>
         <StatusTag :variant="emp.rol === 'admin' ? '' : emp.rol === 'cajero' ? 'ok' : 'off'">
           {{ emp.rolLabel }}

@@ -100,9 +100,10 @@ body.dark-body {
 }
 
 .side {
-  background: #CF520A;
+  background: linear-gradient(180deg, #CF520A 0%, #E55E12 100%);
   border-right: 0;
   color: #fff;
+  overflow: hidden;
 }
 
 .side .sub {
@@ -139,10 +140,10 @@ body.dark-body {
 .main {
   flex: 1;
   min-width: 0;
-  padding: 28px 36px;
+  padding: 30px 40px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -192,13 +193,19 @@ body.dark-body {
 .btn.s {
   background: var(--sf);
   color: var(--tx);
-  border-color: var(--bd);
+  border: 1.5px solid var(--bd);
+}
+
+.btn.d {
+  background: #FEE4E2;
+  color: #B42318;
+  border: 1.5px solid #FECDCA;
 }
 
 .lbl {
   display: block;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--tx2);
   margin-bottom: 6px;
 }
@@ -206,24 +213,30 @@ body.dark-body {
 .inp {
   width: 100%;
   height: 44px;
-  border: 1px solid var(--bd);
+  border: 1.5px solid var(--bd);
   border-radius: 10px;
   padding: 0 14px;
   background: var(--sf);
   color: var(--tx);
   font: 400 14px 'Poppins', sans-serif;
+  box-shadow: inset 0 1px 2px rgba(31, 26, 23, 0.03);
+}
+
+.inp:hover {
+  border-color: #B5A799;
 }
 
 .card {
   background: var(--sf);
-  border: 1px solid var(--bd);
-  border-radius: 14px;
+  border: 1.5px solid var(--bd);
+  border-radius: 16px;
   padding: 22px;
   text-decoration: none;
   color: var(--tx);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 4px 14px rgba(31, 26, 23, 0.05);
 }
 
 .tag {
@@ -336,7 +349,7 @@ body.dark-body {
   height: 34px;
   padding: 0 14px;
   border-radius: 17px;
-  border: 1px solid var(--bd);
+  border: 1.5px solid var(--bd);
   background: var(--sf);
   font-size: 13px;
   font-weight: 500;
@@ -408,7 +421,7 @@ body.dark-body {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid var(--bd);
+  border: 1.5px solid var(--bd);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -418,10 +431,11 @@ body.dark-body {
 
 .seg {
   display: flex;
-  border: 1px solid var(--bd);
+  border: 1.5px solid var(--bd);
   border-radius: 10px;
   overflow: hidden;
   height: 44px;
+  background: var(--bg2);
 }
 
 .seg span {

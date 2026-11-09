@@ -80,31 +80,30 @@ function continuarAlPago(e) {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
+    <div class="row" style="gap:10px;flex-wrap:wrap">
       <h1 style="font-size:22px;font-weight:600">Datos del pedido</h1>
-      <p class="sub">Completa los datos obligatorios (*) según la modalidad elegida.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding-left:6px">
+        <a
+          href="#"
+          :class="['chip', { on: cartStore.tipoPedido === 'local' }]"
+          style="height:32px;font-size:12.5px"
+          @click.prevent="cartStore.setTipoPedido('local'); errores = {}"
+        >En local</a>
+        <a
+          href="#"
+          :class="['chip', { on: cartStore.tipoPedido === 'llevar' }]"
+          style="height:32px;font-size:12.5px"
+          @click.prevent="cartStore.setTipoPedido('llevar'); errores = {}"
+        >Para llevar</a>
+        <a
+          href="#"
+          :class="['chip', { on: cartStore.tipoPedido === 'domicilio' }]"
+          style="height:32px;font-size:12.5px"
+          @click.prevent="cartStore.setTipoPedido('domicilio'); errores = {}"
+        >A domicilio</a>
+      </div>
     </div>
     <StepIndicator :current-step="3" />
-  </div>
-
-  <!-- Selector rápido para cambiar de modalidad sin perder datos -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <span class="sub" style="font-weight:500">Modalidad activa:</span>
-    <a
-      href="#"
-      :class="['chip', { on: cartStore.tipoPedido === 'local' }]"
-      @click.prevent="cartStore.setTipoPedido('local'); errores = {}"
-    >En local</a>
-    <a
-      href="#"
-      :class="['chip', { on: cartStore.tipoPedido === 'llevar' }]"
-      @click.prevent="cartStore.setTipoPedido('llevar'); errores = {}"
-    >Para llevar</a>
-    <a
-      href="#"
-      :class="['chip', { on: cartStore.tipoPedido === 'domicilio' }]"
-      @click.prevent="cartStore.setTipoPedido('domicilio'); errores = {}"
-    >A domicilio</a>
   </div>
 
   <div class="datos-layout">
@@ -126,16 +125,13 @@ function continuarAlPago(e) {
       <div v-if="cartStore.tipoPedido === 'local'" style="display:contents">
         <div class="g2">
           <div>
-            <label class="lbl" for="mesa">Número de mesa *</label>
+            <label class="lbl" for="mesa">Mesa *</label>
             <select id="mesa" v-model="cartStore.datosCliente.mesa" class="inp">
               <option>Mesa 1</option>
               <option>Mesa 2</option>
               <option>Mesa 3</option>
               <option>Mesa 4</option>
               <option>Mesa 5</option>
-              <option>Mesa 6</option>
-              <option>Mesa 7</option>
-              <option>Mesa 8</option>
             </select>
             <span v-if="errores.mesa" class="err-msg">{{ errores.mesa }}</span>
           </div>
@@ -158,7 +154,7 @@ function continuarAlPago(e) {
               v-model="cartStore.datosCliente.nombreLlevar"
               label="Nombre del cliente *"
               type="text"
-              placeholder="¿A nombre de quién sale el pedido?"
+              placeholder="¿A nombre de quién?"
             />
             <span v-if="errores.nombreLlevar" class="err-msg">{{ errores.nombreLlevar }}</span>
           </div>
@@ -166,7 +162,7 @@ function continuarAlPago(e) {
             <BaseInput
               id="hr"
               v-model="cartStore.datosCliente.horaRecoleccion"
-              label="Hora estimada de recolección (13:00 a 21:00) *"
+              label="Hora de recolección *"
               type="text"
               placeholder="Ej. 14:30"
             />
@@ -190,7 +186,7 @@ function continuarAlPago(e) {
           </div>
           <div>
             <div class="row" style="justify-content:space-between;margin-bottom:6px">
-              <label class="lbl" for="dt" style="margin-bottom:0">Teléfono celular (10 dígitos) *</label>
+              <label class="lbl" for="dt" style="margin-bottom:0">Teléfono (10 dígitos) *</label>
               <span
                 :style="{
                   fontSize: '11px',
@@ -198,7 +194,7 @@ function continuarAlPago(e) {
                   color: digitosTelefono.length === 10 ? 'var(--ok)' : 'var(--act)'
                 }"
               >
-                {{ digitosTelefono.length }}/10 dígitos
+                {{ digitosTelefono.length }}/10
               </span>
             </div>
             <input
@@ -207,7 +203,7 @@ function continuarAlPago(e) {
               class="inp"
               type="tel"
               maxlength="10"
-              placeholder="Ej. 2291234567 (solo números)"
+              placeholder="Ej. 2291234567"
               @input="onTelefonoInput($event.target.value)"
             >
             <span v-if="errores.telefono" class="err-msg">{{ errores.telefono }}</span>
@@ -218,9 +214,9 @@ function continuarAlPago(e) {
           <BaseInput
             id="dd"
             v-model="cartStore.datosCliente.direccion"
-            label="Dirección completa (calle, número y colonia) *"
+            label="Dirección *"
             type="text"
-            placeholder="Ej. Av. Reforma 412, Col. Centro"
+            placeholder="Calle, número y colonia"
           />
           <span v-if="errores.direccion" class="err-msg">{{ errores.direccion }}</span>
         </div>
@@ -228,9 +224,9 @@ function continuarAlPago(e) {
         <BaseInput
           id="dr"
           v-model="cartStore.datosCliente.referencia"
-          label="Referencia del domicilio (opcional)"
+          label="Referencia (opcional)"
           type="text"
-          placeholder="Casa de rejas negras, portón azul, frente a parque..."
+          placeholder="Portón azul, frente a parque..."
         />
 
         <div class="g2" style="align-items:end">
@@ -245,7 +241,7 @@ function continuarAlPago(e) {
           </div>
           <div class="row" style="height:44px">
             <StatusTag variant="ok" style="height:26px;padding:0 12px;border-radius:13px">
-              Dentro del horario de entrega (13:00 - 21:00)
+              Horario activo (13:00–21:00)
             </StatusTag>
           </div>
         </div>
@@ -255,79 +251,45 @@ function continuarAlPago(e) {
         v-if="Object.keys(errores).length > 0"
         style="padding:12px 16px;border-radius:10px;background:var(--acs);color:var(--act);font-size:13px;font-weight:500"
       >
-        Por favor revisa y completa los campos obligatorios marcados antes de continuar al pago.
+        Completa los campos marcados antes de continuar.
       </div>
 
       <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:4px">
-        <BaseButton variant="s" to="/cajero/nueva-venta/productos">← Atrás a productos</BaseButton>
+        <BaseButton variant="s" to="/cajero/nueva-venta/productos">Atrás</BaseButton>
         <BaseButton variant="p" href="#" @click.prevent="continuarAlPago">
-          Continuar al pago →
+          Continuar
         </BaseButton>
       </div>
     </form>
 
-    <!-- Resumen de captura dinámico según el tipo de pedido -->
+    <!-- Resumen compacto del pedido -->
     <aside
       class="card"
-      style="width:310px;flex:none;display:flex;flex-direction:column;gap:12px;background:var(--bg2)"
+      style="width:300px;flex:none;display:flex;flex-direction:column;gap:10px;background:var(--bg2)"
     >
-      <h2 style="font-size:15px;font-weight:600">Resumen de captura</h2>
-      <div class="row" style="justify-content:space-between;font-size:14px">
-        <span class="sub">Tipo</span>
-        <span style="font-weight:600">{{ cartStore.tipoEtiqueta }}</span>
-      </div>
-      <div class="row" style="justify-content:space-between;font-size:13px">
-        <span class="sub">Platillos elegidos:</span>
-        <span style="font-weight:500">{{ cartStore.items.reduce((a, i) => a + i.cantidad, 0) }} pzas (${{ cartStore.subtotal - cartStore.descuento }})</span>
+      <div class="row" style="justify-content:space-between">
+        <h2 style="font-size:15px;font-weight:600">Resumen</h2>
+        <span class="sub" style="font-size:12px">{{ cartStore.items.reduce((a, i) => a + i.cantidad, 0) }} pzas</span>
       </div>
 
-      <!-- Resumen para En local -->
-      <div v-if="cartStore.tipoPedido === 'local'" style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-        <div class="row" style="justify-content:space-between">
-          <span class="sub">Mesa:</span>
-          <span style="font-weight:500">{{ cartStore.datosCliente.mesa || 'Pendiente *' }}</span>
-        </div>
-        <div class="row" style="justify-content:space-between">
-          <span class="sub">Nota cocina:</span>
-          <span style="font-weight:500">{{ cartStore.datosCliente.notaCocina || 'Sin nota' }}</span>
-        </div>
-      </div>
-
-      <!-- Resumen para Para llevar -->
-      <div v-else-if="cartStore.tipoPedido === 'llevar'" style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-        <div class="row" style="justify-content:space-between">
-          <span class="sub">Cliente:</span>
-          <span style="font-weight:500">{{ cartStore.datosCliente.nombreLlevar || 'Pendiente *' }}</span>
-        </div>
-        <div class="row" style="justify-content:space-between">
-          <span class="sub">Recolección:</span>
-          <span style="font-weight:500">{{ cartStore.datosCliente.horaRecoleccion ? `${cartStore.datosCliente.horaRecoleccion} hrs` : 'Pendiente *' }}</span>
-        </div>
-      </div>
-
-      <!-- Resumen para A domicilio -->
-      <div v-else style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-        <div class="row" style="justify-content:space-between">
-          <span class="sub">Recibe:</span>
-          <span style="font-weight:500">{{ cartStore.datosCliente.nombreRecibe || 'Pendiente *' }}</span>
-        </div>
-        <div class="row" style="justify-content:space-between">
-          <span class="sub">Celular:</span>
-          <span style="font-weight:500">{{ digitosTelefono.length === 10 ? digitosTelefono : 'Pendiente (10 dígitos) *' }}</span>
+      <div v-if="cartStore.items.length > 0" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;font-size:13px">
+        <div
+          v-for="it in cartStore.items"
+          :key="it.id"
+          class="row"
+          style="justify-content:space-between"
+        >
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">{{ it.cantidad }} × {{ it.nombre }}</span>
+          <span style="font-weight:500">${{ it.subtotal }}</span>
         </div>
       </div>
 
       <div style="height:1px;background:var(--bd)"></div>
 
-      <p v-if="cartStore.tipoPedido === 'local'" class="sub" style="line-height:1.5;font-size:12px">
-        La orden se asociará a la mesa seleccionada para su atención en comedor.
-      </p>
-      <p v-else-if="cartStore.tipoPedido === 'llevar'" class="sub" style="line-height:1.5;font-size:12px">
-        El pedido se preparará para entregarse en mostrador a nombre del cliente en el horario indicado.
-      </p>
-      <p v-else class="sub" style="line-height:1.5;font-size:12px">
-        Los datos de entrega son indispensables para que el repartidor localice al cliente sin contratiempos. La referencia es opcional.
-      </p>
+      <div class="row" style="justify-content:space-between;font-size:15px;font-weight:600">
+        <span>Total actual</span>
+        <span style="color:var(--act)">${{ cartStore.total }}</span>
+      </div>
     </aside>
   </div>
 </template>

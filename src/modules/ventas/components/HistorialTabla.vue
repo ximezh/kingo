@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import StatusTag from '@/components/ui/StatusTag.vue'
 
 defineProps({
@@ -7,6 +9,11 @@ defineProps({
     required: true
   }
 })
+
+const route = useRoute()
+const rutaDomicilios = computed(() =>
+  route.path.startsWith('/admin') ? '/admin/domicilios' : '/cajero/domicilios'
+)
 </script>
 
 <template>
@@ -28,13 +35,41 @@ defineProps({
       <span>{{ v.pago }}</span>
       <span style="font-weight:600">{{ v.total }}</span>
       <span>
-        <StatusTag :variant="v.estadoVariant">{{ v.estado }}</StatusTag>
+        <RouterLink
+          v-if="v.estado === 'Por asignar'"
+          :to="{ path: rutaDomicilios, query: { folio: v.folio } }"
+          class="asignar-pill"
+          title="Ir a seleccionar repartidor"
+        >
+          Por asignar
+        </RouterLink>
+        <StatusTag v-else :variant="v.estadoVariant">{{ v.estado }}</StatusTag>
       </span>
     </div>
   </section>
 </template>
 
 <style scoped>
+.asignar-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--acs);
+  color: var(--act);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--ac);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.asignar-pill:hover {
+  background: var(--btn);
+  color: #fff;
+  transform: translateY(-1px);
+}
 .th,
 .tr {
   display: grid;

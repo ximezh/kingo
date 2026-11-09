@@ -1,6 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { PAQUETES_MOCK, PRODUCTOS_MOCK } from '@/services/catalogo.service'
+import {
+  PAQUETES_MOCK,
+  PRODUCTOS_MOCK,
+  guardarPaquetesStorage,
+  guardarProductosStorage
+} from '@/services/catalogo.service'
+import { reconstruirMenuVenta } from '@/services/ventas.service'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -17,6 +23,7 @@ const mensajeGuardado = ref('')
 
 // Modal para agregar cualquier platillo al paquete (Yakimeshi, Teppanyaki, Sushi, Bebidas, etc.)
 const showModalProducto = ref(false)
+const showModalEliminarPaquete = ref(false)
 const busquedaModal = ref('')
 const categoriaModal = ref('Todas')
 const cantidadAgregar = ref(1)
@@ -114,16 +121,30 @@ function crearNuevoPaquete() {
     ...nuevo,
     itemsIncluidos: nuevo.itemsIncluidos.map((i) => ({ ...i }))
   })
+  PRODUCTOS_MOCK.push({
+    id: nuevoId,
+    nombre: nuevo.nombre,
+    categoria: 'Paquetes',
+    presentacion: 'Paquete',
+    descripcion: nuevo.itemsIncluidos.map((i) => `${i.cantidad} ${i.nombre}`).join(', '),
+    precio: 250,
+    tieneFoto: true,
+    activo: true,
+    permiteExtras: false
+  })
+  guardarPaquetesStorage()
+  guardarProductosStorage()
+  reconstruirMenuVenta()
   paqueteActivoId.value = nuevoId
 }
 
 function guardarPaqueteActual() {
   const totalPzas = paqueteActual.value.itemsIncluidos.reduce((acc, i) => acc + i.cantidad, 0)
+  const numPrecio = Number(String(paqueteActual.value.precioFijo).replace(/[^0-9.]/g, '')) || 0
   if (paqueteActual.value.tipoPrecio === 'regla') {
     paqueteActual.value.detalle = `${totalPzas} pzas`
   } else if (paqueteActual.value.precioFijo) {
-    const num = String(paqueteActual.value.precioFijo).replace(/[^0-9.]/g, '')
-    paqueteActual.value.detalle = num ? `$${num}` : paqueteActual.value.detalle
+    paqueteActual.value.detalle = numPrecio ? `$${numPrecio}` : paqueteActual.value.detalle
   }
 
   const idx = PAQUETES_MOCK.findIndex((p) => p.id === paqueteActual.value.id)
@@ -133,7 +154,55 @@ function guardarPaqueteActual() {
       itemsIncluidos: paqueteActual.value.itemsIncluidos.map((i) => ({ ...i }))
     }
   }
+
+  const prodPaq = PRODUCTOS_MOCK.find((p) => p.id === paqueteActual.value.id)
+  if (prodPaq) {
+    prodPaq.nombre = paqueteActual.value.nombre
+    prodPaq.descripcion = paqueteActual.value.itemsIncluidos.map((i) => `${i.cantidad} ${i.nombre}`).join(', ')
+    if (paqueteActual.value.tipoPrecio === 'fijo' && numPrecio > 0) {
+      prodPaq.precio = numPrecio
+    }
+  }
+
+  guardarPaquetesStorage()
+  guardarProductosStorage()
+  reconstruirMenuVenta()
+
   mensajeGuardado.value = `Paquete "${paqueteActual.value.nombre}" guardado correctamente.`
+  setTimeout(() => {
+    mensajeGuardado.value = ''
+  }, 3000)
+}
+
+function confirmarEliminarPaquete() {
+  if (!paqueteActual.value) return
+  const idEliminar = paqueteActual.value.id
+  const nombreEliminado = paqueteActual.value.nombre
+
+  paquetes.value = paquetes.value.filter((p) => p.id !== idEliminar)
+
+  const idxMock = PAQUETES_MOCK.findIndex((p) => p.id === idEliminar)
+  if (idxMock > -1) {
+    PAQUETES_MOCK.splice(idxMock, 1)
+  }
+
+  const idxProd = PRODUCTOS_MOCK.findIndex((p) => p.id === idEliminar)
+  if (idxProd > -1) {
+    PRODUCTOS_MOCK.splice(idxProd, 1)
+  }
+
+  guardarPaquetesStorage()
+  guardarProductosStorage()
+  reconstruirMenuVenta()
+
+  fetch(`http://localhost:3000/api/catalogo/paquetes/${idEliminar}`, {
+    method: 'DELETE'
+  }).catch(() => {})
+
+  showModalEliminarPaquete.value = false
+  paqueteActivoId.value = paquetes.value[0]?.id || null
+
+  mensajeGuardado.value = `Paquete "${nombreEliminado}" eliminado.`
   setTimeout(() => {
     mensajeGuardado.value = ''
   }, 3000)
@@ -142,9 +211,9 @@ function guardarPaqueteActual() {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
+    <div class="row" style="gap:10px">
       <h1 style="font-size:22px;font-weight:600">Paquetes</h1>
-      <p class="sub">Arma combos incluyendo sushi, yakimeshi, teppanyaki, bebidas y reglas de cálculo.</p>
+      <StatusTag>{{ paquetes.length }}</StatusTag>
     </div>
     <BaseButton variant="p" href="#" @click.prevent="crearNuevoPaquete">+ Nuevo paquete</BaseButton>
   </div>
@@ -209,7 +278,7 @@ function guardarPaqueteActual() {
       <div class="paquetes-Subgrid">
         <section class="card" style="padding:20px;gap:14px">
           <div class="row" style="justify-content:space-between">
-            <h2 style="font-size:15px;font-weight:600">Platillos incluidos en el paquete</h2>
+            <h2 style="font-size:15px;font-weight:600">Contenido del paquete</h2>
             <StatusTag>{{ paqueteActual.itemsIncluidos.length }} platillos</StatusTag>
           </div>
 
@@ -241,7 +310,7 @@ function guardarPaqueteActual() {
           </div>
 
           <div v-else class="sub" style="padding:16px;text-align:center;border:1px dashed var(--bd);border-radius:10px">
-            Este paquete aún no tiene platillos asignados.
+            Sin platillos asignados.
           </div>
 
           <BaseButton variant="s" href="#" @click.prevent="abrirModalAgregarPlatillo">
@@ -262,9 +331,9 @@ function guardarPaqueteActual() {
               type="checkbox"
               style="width:18px;height:18px;accent-color:#C94C08"
             >
-            Un producto sale gratis (ej. Paga 4, lleva 5)
+            Un producto gratis (ej. 5x4)
           </label>
-          <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px">
+          <div v-if="paqueteActual.productoGratis" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px">
             <BaseInput
               id="rt"
               v-model="paqueteActual.seEligen"
@@ -278,18 +347,41 @@ function guardarPaqueteActual() {
               type="text"
             />
           </div>
-          <p class="sub" style="line-height:1.5">
-            El sistema detecta automáticamente el platillo o barra de menor precio y lo descuenta.
-          </p>
         </section>
       </div>
 
-      <div style="display:flex;gap:12px;justify-content:flex-end">
-        <BaseButton variant="s" to="/admin/paquetes">Cancelar</BaseButton>
-        <BaseButton variant="p" href="#" @click.prevent="guardarPaqueteActual">Guardar paquete</BaseButton>
+      <div style="display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+        <BaseButton
+          v-if="paqueteActual"
+          variant="d"
+          href="#"
+          @click.prevent="showModalEliminarPaquete = true"
+        >
+          Eliminar paquete
+        </BaseButton>
+        <div style="display:flex;gap:12px;margin-left:auto">
+          <BaseButton variant="s" to="/admin/productos">Cancelar</BaseButton>
+          <BaseButton variant="p" href="#" @click.prevent="guardarPaqueteActual">Guardar paquete</BaseButton>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Modal de confirmación para eliminar paquete -->
+  <BaseModal
+    v-model="showModalEliminarPaquete"
+    aria-label="Eliminar paquete"
+    width="440px"
+  >
+    <h2 style="font-size:18px;font-weight:600">¿Eliminar {{ paqueteActual?.nombre }}?</h2>
+    <p class="sub" style="line-height:1.5">
+      Este paquete dejará de aparecer en el catálogo y en la pantalla de nueva venta.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
+      <BaseButton variant="s" href="#" @click.prevent="showModalEliminarPaquete = false">Cancelar</BaseButton>
+      <BaseButton variant="d" href="#" @click.prevent="confirmarEliminarPaquete">Sí, eliminar</BaseButton>
+    </div>
+  </BaseModal>
 
   <!-- Modal para elegir cualquier platillo del menú e incluirlo en el paquete -->
   <BaseModal
@@ -297,16 +389,13 @@ function guardarPaqueteActual() {
     aria-label="Agregar platillo al paquete"
     width="540px"
   >
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h2 style="font-size:19px;font-weight:600">Agregar platillo a {{ paqueteActual.nombre }}</h2>
-      <p class="sub">Busca y selecciona cualquier platillo del menú (Yakimeshi, Teppanyaki, Rollos, Bebidas, Kushiages...).</p>
-    </div>
+    <h2 style="font-size:19px;font-weight:600">Agregar platillo a {{ paqueteActual.nombre }}</h2>
 
     <input
       v-model="busquedaModal"
       class="inp"
       type="search"
-      placeholder="Buscar ej. Yakimeshi, Teppanyaki, Tampico, Té verde..."
+      placeholder="Buscar platillo..."
     >
 
     <div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;padding-right:4px">

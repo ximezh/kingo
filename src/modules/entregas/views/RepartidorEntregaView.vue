@@ -2,8 +2,8 @@
 import { ref, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import StatusTag from '@/components/ui/StatusTag.vue'
-import { pedidosRepartidorState } from '@/services/entregas.service'
-import { HISTORIAL_VENTAS_MOCK } from '@/services/ventas.service'
+import { pedidosRepartidorState, guardarEntregasStorage } from '@/services/entregas.service'
+import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,6 +39,9 @@ function marcarEntregado() {
     venta.estadoVariant = 'ok'
   }
 
+  guardarEntregasStorage()
+  guardarVentasStorage()
+
   fetch(`http://localhost:3000/api/entregas/${String(detalle.value.folio).replace('#', '')}/estado`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -63,6 +66,9 @@ function marcarNoEntregado() {
     venta.estadoVariant = 'off'
   }
 
+  guardarEntregasStorage()
+  guardarVentasStorage()
+
   fetch(`http://localhost:3000/api/entregas/${String(detalle.value.folio).replace('#', '')}/estado`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -79,7 +85,7 @@ function marcarNoEntregado() {
       to="/repartidor/pedidos"
       class="back"
       style="font-size:13px;font-weight:500;color:var(--act);text-decoration:none;align-self:flex-start"
-    >← Volver a mis pedidos</RouterLink>
+    >Mis pedidos</RouterLink>
     <div class="row" style="justify-content:space-between">
       <h1 style="font-size:20px;font-weight:600">Pedido {{ detalle.folio }}</h1>
       <StatusTag :variant="detalle.estado === 'Entregado' ? 'ok' : detalle.estado === 'No entregado' ? 'off' : ''">
@@ -130,7 +136,7 @@ function marcarNoEntregado() {
     </section>
 
     <div v-if="detalle.estado === 'Por entregar'">
-      <label class="lbl" for="mot">Si no se entregó, indica el motivo</label>
+      <label class="lbl" for="mot">Motivo de no entrega (opcional)</label>
       <select
         id="mot"
         v-model="motivoSeleccionado"
@@ -165,7 +171,7 @@ function marcarNoEntregado() {
 
     <div v-else style="display:flex;flex-direction:column;gap:10px;padding-bottom:6px">
       <RouterLink class="btn s entrega-btn" to="/repartidor/pedidos">
-        ← Volver a la lista de pedidos
+        Volver a la lista de pedidos
       </RouterLink>
     </div>
   </div>

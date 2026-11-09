@@ -9,7 +9,7 @@ const app = express()
 const PORT = Number(process.env.PORT || 3000)
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 
 const ROL_LABELS = {
   admin: 'Administrador',
@@ -467,6 +467,17 @@ app.get('/api/catalogo/paquetes', async (_req, res) => {
   }
 })
 
+app.delete('/api/catalogo/paquetes/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  try {
+    await pool.query(`DELETE FROM paquetes WHERE id = $1 OR producto_id = $1`, [id])
+    await pool.query(`UPDATE productos SET activo = FALSE, actualizado_en = NOW() WHERE id = $1`, [id])
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
 // =============================================================================
 // 4. PROMOCIONES (2x1 Lunes y Martes cobrando el de mayor precio)
 // =============================================================================
@@ -540,6 +551,17 @@ app.put('/api/promociones/:id', async (req, res) => {
   }
 })
 
+app.delete('/api/promociones/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  try {
+    await pool.query(`DELETE FROM promocion_dias WHERE promocion_id = $1`, [id])
+    await pool.query(`DELETE FROM promociones WHERE id = $1`, [id])
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
 // =============================================================================
 // 5. VENTAS Y PEDIDOS (REGISTRO TRANSACCIONAL EN POSTGRESQL)
 // =============================================================================
@@ -555,7 +577,27 @@ app.get('/api/ventas', async (_req, res) => {
         v.numero_mesa,
         v.nombre_cliente,
         v.metodo_pago,
-        v.total::FLOAT AS total
+        v.subtotal::FLOAT AS subtotal,
+        v.descuento_total::FLOAT AS descuento,
+        v.costo_envio::FLOAT AS envio,
+        v.total::FLOAT AS total,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'nombre', vd.nombre_snapshot,
+                'detalle', vd.detalle_snapshot,
+                'etiquetaPromo', vd.etiqueta_promo,
+                'cantidad', vd.cantidad,
+                'precioUnitario', vd.precio_unitario::FLOAT,
+                'subtotal', vd.subtotal::FLOAT
+              ) ORDER BY vd.id ASC
+            )
+            FROM venta_detalles vd
+            WHERE vd.venta_id = v.id
+          ),
+          '[]'::json
+        ) AS "itemsSnapshot"
       FROM ventas v
       ORDER BY v.id DESC
       LIMIT 50
@@ -577,14 +619,22 @@ app.get('/api/ventas', async (_req, res) => {
 
     const historial = rows.map((r) => {
       const est = estadoLabels[r.estado] || { label: 'Completada', variant: 'ok' }
+      const items = Array.isArray(r.itemsSnapshot) ? r.itemsSnapshot : []
       return {
         id: r.id,
         folio: r.folio,
         fechaHora: `Hoy, ${r.hora}`,
         tipo: tipoLabels[r.tipo_pedido] || 'En local',
+        tipoCodigo: r.tipo_pedido,
         clienteMesa: r.tipo_pedido === 'local' ? r.numero_mesa || 'Mesa 1' : r.nombre_cliente || 'Cliente',
         pago: r.metodo_pago,
+        subtotal: Math.round(r.subtotal || r.total),
+        descuento: Math.round(r.descuento || 0),
+        envio: Math.round(r.envio || 0),
+        totalNum: Math.round(r.total),
         total: `$${Math.round(r.total)}`,
+        cantidadProductos: items.reduce((acc, it) => acc + (Number(it.cantidad) || 1), 0),
+        itemsSnapshot: items,
         estado: est.label,
         estadoVariant: est.variant
       }

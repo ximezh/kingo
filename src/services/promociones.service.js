@@ -1,46 +1,64 @@
-import { ref } from 'vue'
+import { reactive } from 'vue'
 
-export const PROMOCIONES_MOCK = ref([
+const STORAGE_PROMOCIONES_KEY = 'kingo_promociones_v2'
+
+const PROMOCIONES_BASE = [
   {
     id: 1,
     nombre: '2x1 en Rollos',
     dia: 'Lunes y Martes',
     diasKeys: ['Lun', 'Mar'],
+    productosIncluidos: ['Tampico Roll', 'Acapulco Roll', 'California Roll'],
+    tipoDescuento: '2x1',
     descuento: '2x1 (se cobra el de mayor precio)',
     vigencia: 'Sin fecha final',
+    inicio: '01/10/2026',
+    fin: '',
     activa: true,
     accionTexto: 'Editar',
-    accionRuta: '/admin/promociones/editar'
+    accionRuta: '/admin/promociones/editar?id=1'
   },
   {
     id: 2,
     nombre: 'Combos con descuento',
     dia: 'Jueves',
     diasKeys: ['Jue'],
+    productosIncluidos: ['Paquete A', 'Paquete B', 'Paquete 1', 'Paquete 2'],
+    tipoDescuento: 'Porcentaje',
     descuento: '10% en paquetes',
     vigencia: 'Sin fecha final',
+    inicio: '01/10/2026',
+    fin: '',
     activa: true,
     accionTexto: 'Editar',
-    accionRuta: '/admin/promociones/editar'
+    accionRuta: '/admin/promociones/editar?id=2'
   },
   {
     id: 3,
     nombre: 'Especial de fin de semana',
     dia: 'Sáb y dom',
     diasKeys: ['Sab', 'Dom'],
+    productosIncluidos: ['Paquete 2', 'Paquete Sushi'],
+    tipoDescuento: 'Precio fijo',
     descuento: 'Precio especial en combos',
     vigencia: 'Hasta 30 nov',
+    inicio: '01/10/2026',
+    fin: '30/11/2026',
     activa: true,
     accionTexto: 'Editar',
-    accionRuta: '/admin/promociones/editar'
+    accionRuta: '/admin/promociones/editar?id=3'
   },
   {
     id: 4,
     nombre: 'Paga 4, lleva 5',
     dia: 'Todos los días',
     diasKeys: ['Lun', 'Mar', 'Jue', 'Vie', 'Sab', 'Dom'],
+    productosIncluidos: ['Paquete Sushi'],
+    tipoDescuento: 'Precio fijo',
     descuento: 'Regla del Paquete Sushi',
     vigencia: 'Sin fecha final',
+    inicio: '01/10/2026',
+    fin: '',
     activa: true,
     accionTexto: 'Ver',
     accionRuta: '/admin/paquetes'
@@ -50,13 +68,40 @@ export const PROMOCIONES_MOCK = ref([
     nombre: 'Postre gratis',
     dia: 'Viernes',
     diasKeys: ['Vie'],
+    productosIncluidos: ['Helado de vainilla', 'Tempura Helado'],
+    tipoDescuento: 'Precio fijo',
     descuento: 'Postre en compras desde $400',
     vigencia: 'Terminó 31 ago',
+    inicio: '01/08/2026',
+    fin: '31/08/2026',
     activa: false,
     accionTexto: 'Editar',
-    accionRuta: '/admin/promociones/editar'
+    accionRuta: '/admin/promociones/editar?id=5'
   }
-]).value
+]
+
+function cargarPromocionesIniciales() {
+  try {
+    const saved = localStorage.getItem(STORAGE_PROMOCIONES_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return PROMOCIONES_BASE.map((p) => ({ ...p, diasKeys: [...(p.diasKeys || [])] }))
+}
+
+export const PROMOCIONES_MOCK = reactive(cargarPromocionesIniciales())
+
+export function guardarPromocionesStorage() {
+  try {
+    localStorage.setItem(STORAGE_PROMOCIONES_KEY, JSON.stringify(PROMOCIONES_MOCK))
+  } catch {
+    // ignore
+  }
+}
 
 export const DIAS_SEMANA_PROMO = [
   { key: 'Lun', label: 'Lun', cerrado: false },
@@ -70,15 +115,11 @@ export const DIAS_SEMANA_PROMO = [
 
 const MAPA_GETDAY_A_KEY = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
 
-/**
- * Devuelve true únicamente si hoy es un día válido para la promoción 2x1 (por defecto Lunes y Martes).
- * Si es viernes, jueves, sábado, domingo o miércoles, devuelve false y no se muestra en ventas.
- */
 export function esPromo2x1ValidaHoy() {
   const promo2x1 = PROMOCIONES_MOCK.find((p) => p.id === 1)
   if (promo2x1 && !promo2x1.activa) return false
 
-  const diaActualNum = new Date().getDay() // 1 = Lunes, 2 = Martes
+  const diaActualNum = new Date().getDay()
   const diaKeyActual = MAPA_GETDAY_A_KEY[diaActualNum]
   const diasValidos = promo2x1?.diasKeys || ['Lun', 'Mar']
 

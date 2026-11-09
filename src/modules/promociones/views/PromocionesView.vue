@@ -1,12 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { PROMOCIONES_MOCK } from '@/services/promociones.service'
+import { PROMOCIONES_MOCK, guardarPromocionesStorage } from '@/services/promociones.service'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 import PromocionesTabla from '@/modules/promociones/components/PromocionesTabla.vue'
 
 const busqueda = ref('')
 const filtroActivo = ref('Todas')
 const filtros = ['Todas', 'Activas', 'Inactivas']
+
+const promoAEliminar = ref(null)
+const showModalEliminar = ref(false)
 
 const promocionesFiltradas = computed(() => {
   const q = busqueda.value.trim().toLowerCase()
@@ -23,14 +27,33 @@ const promocionesFiltradas = computed(() => {
     return true
   })
 })
+
+function solicitarEliminarPromo(promo) {
+  promoAEliminar.value = promo
+  showModalEliminar.value = true
+}
+
+function confirmarEliminarPromo() {
+  if (!promoAEliminar.value) return
+  const idEliminar = promoAEliminar.value.id
+  const idx = PROMOCIONES_MOCK.findIndex((p) => p.id === idEliminar)
+  if (idx > -1) {
+    PROMOCIONES_MOCK.splice(idx, 1)
+  }
+  guardarPromocionesStorage()
+
+  fetch(`http://localhost:3000/api/promociones/${idEliminar}`, {
+    method: 'DELETE'
+  }).catch(() => {})
+
+  showModalEliminar.value = false
+  promoAEliminar.value = null
+}
 </script>
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h1 style="font-size:22px;font-weight:600">Promociones</h1>
-      <p class="sub">Se aplican solas al registrar una venta o pueden seleccionarse desde la caja.</p>
-    </div>
+    <h1 style="font-size:22px;font-weight:600">Promociones</h1>
     <BaseButton variant="p" to="/admin/promociones/nueva">+ Nueva promoción</BaseButton>
   </div>
 
@@ -55,7 +78,11 @@ const promocionesFiltradas = computed(() => {
     >
   </div>
 
-  <PromocionesTabla v-if="promocionesFiltradas.length > 0" :promociones="promocionesFiltradas" />
+  <PromocionesTabla
+    v-if="promocionesFiltradas.length > 0"
+    :promociones="promocionesFiltradas"
+    @eliminar="solicitarEliminarPromo"
+  />
 
   <div
     v-else
@@ -68,4 +95,19 @@ const promocionesFiltradas = computed(() => {
       Ver todas las promociones
     </BaseButton>
   </div>
+
+  <BaseModal
+    v-model="showModalEliminar"
+    aria-label="Eliminar promoción"
+    width="440px"
+  >
+    <h2 style="font-size:18px;font-weight:600">¿Eliminar "{{ promoAEliminar?.nombre }}"?</h2>
+    <p class="sub" style="line-height:1.5">
+      Esta promoción se eliminará de la lista y dejará de aplicarse en las nuevas ventas.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
+      <BaseButton variant="s" href="#" @click.prevent="showModalEliminar = false">Cancelar</BaseButton>
+      <BaseButton variant="d" href="#" @click.prevent="confirmarEliminarPromo">Sí, eliminar</BaseButton>
+    </div>
+  </BaseModal>
 </template>

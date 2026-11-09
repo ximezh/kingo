@@ -51,10 +51,7 @@ function irAResultadoReporte() {
 </script>
 
 <template>
-  <div style="display:flex;flex-direction:column;gap:4px">
-    <h1 style="font-size:22px;font-weight:600">Reportes</h1>
-    <p class="sub">Elige qué quieres consultar y de qué fechas. El nombre de exportación se generará automáticamente según tu selección.</p>
-  </div>
+  <h1 style="font-size:22px;font-weight:600">Reportes</h1>
 
   <section class="card sel-card">
     <h2 style="font-size:16px;font-weight:600">1. Tipo de reporte</h2>
@@ -137,24 +134,12 @@ function irAResultadoReporte() {
         <input id="d2" v-model="fechaHasta" class="inp" type="text" />
       </div>
     </div>
-    <div class="sub" style="font-size:12px">
-      Nombre sugerido de archivo:
-      <strong style="color:var(--tx)">
-        {{
-          generarNombreArchivoReporte({
-            tipoTitulo: tipos.find((t) => t.id === selectedTipo)?.titulo,
-            fechaDesde,
-            fechaHasta
-          })
-        }}.pdf
-      </strong>
-    </div>
   </section>
 
   <div class="row" style="justify-content:flex-end;gap:12px">
     <RouterLink class="btn s sel-btn" to="/admin/inicio">Cancelar</RouterLink>
     <a class="btn p sel-btn" href="/admin/reportes/resultado" @click.prevent="irAResultadoReporte">
-      Generar reporte →
+      Generar reporte
     </a>
   </div>
 </template>

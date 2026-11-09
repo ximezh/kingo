@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { CATEGORIAS_MOCK, CATEGORIAS_NOTAS_MAP, PRODUCTOS_MOCK } from '@/services/catalogo.service'
+import { CATEGORIAS_MOCK, PRODUCTOS_MOCK, CATEGORIAS_NOTAS_MAP } from '@/services/catalogo.service'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
+import StatusTag from '@/components/ui/StatusTag.vue'
 import ProductoCard from '@/modules/catalogo/components/ProductoCard.vue'
 
 const authStore = useAuthStore()
@@ -11,10 +13,29 @@ const isAdmin = computed(() => authStore.role === 'admin')
 const busqueda = ref('')
 const categoriaActiva = ref('Todas')
 const productos = ref(PRODUCTOS_MOCK)
+const showInfoModal = ref(false)
+const productoDetalle = ref(null)
 
-const notaCategoriaActual = computed(() => {
-  if (categoriaActiva.value === 'Todas') return ''
-  return CATEGORIAS_NOTAS_MAP[categoriaActiva.value] || ''
+function abrirDetalleProducto(prod) {
+  productoDetalle.value = prod
+  showInfoModal.value = true
+}
+
+const notaDetalle = computed(() => {
+  if (!productoDetalle.value) return ''
+  return productoDetalle.value.presentacion || CATEGORIAS_NOTAS_MAP[productoDetalle.value.categoria] || ''
+})
+
+const precioDetalle = computed(() => {
+  const p = productoDetalle.value
+  if (!p) return ''
+  if (p.variantes && p.variantes.length > 0) {
+    return p.variantes.map((v) => `${v.nombre} $${v.precio}`).join(' / ')
+  }
+  if (p.precioNulo || p.precio === null) {
+    return 'Paga 4, lleva 5'
+  }
+  return `$${p.precio}`
 })
 
 const productosFiltrados = computed(() => {
@@ -41,31 +62,30 @@ function limpiarFiltros() {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
+    <div class="row" style="gap:10px">
       <h1 style="font-size:22px;font-weight:600">Productos</h1>
-      <p class="sub">Menú digital de Kin Sushi</p>
+      <StatusTag>{{ productosFiltrados.length }}</StatusTag>
     </div>
-    <BaseButton v-if="isAdmin" variant="p" to="/admin/productos/nuevo">
-      Nuevo producto
-    </BaseButton>
-  </div>
 
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <label for="buscar" style="position:absolute;left:-9999px">Buscar producto</label>
-    <div class="search-wrap" style="max-width:380px;flex:1">
-      <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"></circle>
-        <path d="M21 21l-4.3-4.3"></path>
-      </svg>
-      <input
-        id="buscar"
-        v-model="busqueda"
-        class="inp search-inp"
-        type="search"
-        placeholder="Buscar por nombre"
-      >
+    <div class="row" style="gap:10px;flex:1;justify-content:flex-end;min-width:260px">
+      <label for="buscar" style="position:absolute;left:-9999px">Buscar producto</label>
+      <div class="search-wrap" style="max-width:320px;flex:1">
+        <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="M21 21l-4.3-4.3"></path>
+        </svg>
+        <input
+          id="buscar"
+          v-model="busqueda"
+          class="inp search-inp"
+          type="search"
+          placeholder="Buscar platillo..."
+        >
+      </div>
+      <BaseButton v-if="isAdmin" variant="p" to="/admin/productos/nuevo">
+        + Nuevo producto
+      </BaseButton>
     </div>
-    <span v-if="notaCategoriaActual" class="sub">{{ notaCategoriaActual }}</span>
   </div>
 
   <div style="display:flex;flex-wrap:wrap;gap:8px">
@@ -86,6 +106,7 @@ function limpiarFiltros() {
       :key="prod.id"
       :producto="prod"
       :editable="isAdmin"
+      @ver-info="abrirDetalleProducto"
     />
   </div>
 
@@ -101,6 +122,51 @@ function limpiarFiltros() {
       Ver todo
     </BaseButton>
   </div>
+
+  <!-- Mini ventana de ingredientes / descripción del platillo -->
+  <BaseModal
+    v-model="showInfoModal"
+    aria-label="Descripción del platillo"
+    width="380px"
+  >
+    <template v-if="productoDetalle">
+      <div v-if="productoDetalle.imagenUrl" class="info-modal-photo">
+        <img :src="productoDetalle.imagenUrl" :alt="productoDetalle.nombre">
+      </div>
+
+      <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="row" style="gap:6px;flex-wrap:wrap">
+            <StatusTag>{{ productoDetalle.categoria }}</StatusTag>
+            <span v-if="notaDetalle" class="sub" style="font-size:12px">{{ notaDetalle }}</span>
+          </div>
+          <h2 style="font-size:18px;font-weight:600;line-height:1.25">{{ productoDetalle.nombre }}</h2>
+        </div>
+        <span style="font-size:17px;font-weight:600;color:var(--act);white-space:nowrap">{{ precioDetalle }}</span>
+      </div>
+
+      <div class="info-desc-box">
+        <span class="info-desc-label">Ingredientes / Qué incluye</span>
+        <p style="font-size:14px;line-height:1.5;color:var(--tx)">
+          {{ productoDetalle.descripcion || 'Sin descripción adicional registrada para este platillo.' }}
+        </p>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:2px">
+        <BaseButton
+          v-if="isAdmin"
+          variant="s"
+          :to="`/admin/productos/editar?id=${productoDetalle.id}`"
+          @click="showInfoModal = false"
+        >
+          Editar
+        </BaseButton>
+        <BaseButton variant="p" href="#" @click.prevent="showInfoModal = false">
+          Cerrar
+        </BaseButton>
+      </div>
+    </template>
+  </BaseModal>
 </template>
 
 <style scoped>
@@ -123,7 +189,40 @@ function limpiarFiltros() {
 
 .catalogo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.info-modal-photo {
+  width: 100%;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg2);
+}
+
+.info-modal-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.info-desc-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg2);
+  border: 1.5px solid var(--bd);
+}
+
+.info-desc-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 </style>

@@ -41,7 +41,6 @@ const horaActualFormateada = computed(() => {
   return now.value.toLocaleTimeString('es-MX', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: false
   })
 })
@@ -61,59 +60,33 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 </script>
 
 <template>
-  <!-- Banner Hero Creativo compartido por Administrador y Cajero -->
+  <!-- Encabezado principal limpio y estético -->
   <section class="dash-hero">
     <svg
       class="dash-hero-art"
-      width="340"
-      height="340"
-      viewBox="-170 -170 340 340"
+      width="300"
+      height="300"
+      viewBox="-150 -150 300 300"
       fill="none"
       aria-hidden="true"
     >
-      <circle r="155" stroke="currentColor" stroke-opacity="0.12" stroke-width="1.5" />
-      <circle r="120" stroke="currentColor" stroke-opacity="0.16" stroke-width="1.5" />
-      <circle r="85" stroke="currentColor" stroke-opacity="0.22" stroke-width="2" />
-      <circle r="52" fill="currentColor" fill-opacity="0.08" />
-      <circle r="18" fill="currentColor" fill-opacity="0.18" />
+      <circle r="138" stroke="currentColor" stroke-opacity="0.12" stroke-width="1.5" />
+      <circle r="104" stroke="currentColor" stroke-opacity="0.16" stroke-width="1.5" />
+      <circle r="72" stroke="currentColor" stroke-opacity="0.22" stroke-width="2" />
+      <circle r="42" fill="currentColor" fill-opacity="0.08" />
+      <circle r="14" fill="currentColor" fill-opacity="0.18" />
     </svg>
 
     <div class="dash-hero-top">
       <div style="display:flex;flex-direction:column;gap:6px;position:relative;z-index:1">
-        <span class="dash-date-badge">{{ fechaActualFormateada }} · Kin Sushi</span>
+        <span class="dash-date-badge">{{ fechaActualFormateada }}</span>
         <h1 class="dash-greeting">{{ saludoPorHora }}, {{ nombreMostrado }}</h1>
-        <p class="dash-subtitle">
-          {{
-            isAdmin
-              ? 'Panel de control general: administra el menú, promociones, personal y reportes del restaurante.'
-              : 'Listo para tomar pedidos en local, para llevar o a domicilio con promociones automáticas.'
-          }}
-        </p>
       </div>
 
       <div class="dash-clock-pill">
         <span class="pulse-dot"></span>
         <span>Abierto · {{ horaActualFormateada }}</span>
-        <span class="dash-clock-sched">(13:00 a 21:00)</span>
-      </div>
-    </div>
-
-    <div class="dash-stats-row">
-      <div class="dash-stat-item">
-        <span class="dash-stat-label">Ventas registradas hoy</span>
-        <strong class="dash-stat-val">{{ totalVentasHoy }} pedidos</strong>
-      </div>
-      <div class="dash-stat-item">
-        <span class="dash-stat-label">Domicilios por asignar</span>
-        <strong class="dash-stat-val">{{ pendientesDomicilio }} pendientes</strong>
-      </div>
-      <div class="dash-stat-item">
-        <span class="dash-stat-label">Platillos en menú</span>
-        <strong class="dash-stat-val">{{ totalProductosActivos }} activos</strong>
-      </div>
-      <div class="dash-stat-item">
-        <span class="dash-stat-label">Equipo activo</span>
-        <strong class="dash-stat-val">{{ totalEmpleadosActivos }} integrantes</strong>
+        <span class="dash-clock-sched">13:00–21:00</span>
       </div>
     </div>
   </section>
@@ -124,21 +97,16 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
       <RouterLink class="dash-cta-banner" to="/cajero/nueva-venta">
         <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
           <div class="dash-cta-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 5v14M5 12h14"></path>
             </svg>
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <div class="row" style="gap:8px">
-              <h2 style="font-size:21px;font-weight:600">Registrar nueva venta</h2>
-              <span class="tag">Paso a paso</span>
-            </div>
-            <p class="sub" style="font-size:14px">
-              Toma pedidos en local, para llevar o a domicilio con cálculo automático de paquetes y promociones.
-            </p>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <h2 style="font-size:21px;font-weight:600;letter-spacing:-0.2px">Nueva venta</h2>
+            <p class="sub" style="font-size:13.5px">En local, para llevar o a domicilio</p>
           </div>
         </div>
-        <span class="btn p dash-cta-btn">Empezar venta →</span>
+        <span class="btn p dash-cta-btn">Empezar venta</span>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/cajero/domicilios">
@@ -150,11 +118,14 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
               <circle cx="17" cy="18" r="1.6"></circle>
             </svg>
           </div>
-          <span class="tag">{{ pendientesDomicilio }} por asignar</span>
+          <span class="tag">{{ pendientesDomicilio }} pendientes</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Pedidos a domicilio</h3>
-        <p class="sub" style="line-height:1.5">Asigna repartidor disponible a los pedidos pendientes de envío.</p>
-        <span class="dash-card-link">Gestionar envíos →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Domicilios</h3>
+            <p class="sub">Asignar repartidor</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/cajero/catalogo">
@@ -166,9 +137,12 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
           </div>
           <span class="tag ok">{{ totalProductosActivos }} platillos</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Catálogo digital</h3>
-        <p class="sub" style="line-height:1.5">Consulta rápidamente ingredientes, precios y disponibilidad del menú.</p>
-        <span class="dash-card-link">Ver menú completo →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Catálogo</h3>
+            <p class="sub">Menú y precios</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/cajero/historial">
@@ -179,11 +153,14 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
               <path d="M12 8v4l3 2"></path>
             </svg>
           </div>
-          <span class="tag off">Hoy: {{ totalVentasHoy }}</span>
+          <span class="tag off">{{ totalVentasHoy }} hoy</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Historial de ventas</h3>
-        <p class="sub" style="line-height:1.5">Revisa las ventas del turno por modalidad, folio y método de pago.</p>
-        <span class="dash-card-link">Consultar historial →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Historial</h3>
+            <p class="sub">Ventas del turno</p>
+          </div>
+        </div>
       </RouterLink>
     </div>
   </div>
@@ -198,11 +175,14 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
               <path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"></path>
             </svg>
           </div>
-          <span class="tag">{{ totalProductosActivos }} platillos</span>
+          <span class="tag">{{ totalProductosActivos }} activos</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Productos y menú</h3>
-        <p class="sub" style="line-height:1.5">Agrega, edita precios, configura tamaños/extras o da de baja platillos.</p>
-        <span class="dash-card-link">Administrar catálogo →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Productos</h3>
+            <p class="sub">Menú y precios</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/admin/paquetes">
@@ -214,9 +194,12 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
           </div>
           <span class="tag">Combos</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Paquetes</h3>
-        <p class="sub" style="line-height:1.5">Arma combos con barras de sushi, yakimeshi, teppanyaki y reglas especiales.</p>
-        <span class="dash-card-link">Configurar paquetes →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Paquetes</h3>
+            <p class="sub">Combos y reglas</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/admin/promociones">
@@ -229,9 +212,12 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
           </div>
           <span class="tag ok">Automáticas</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Promociones</h3>
-        <p class="sub" style="line-height:1.5">Crea promociones por día de la semana (2x1, porcentaje o precio fijo).</p>
-        <span class="dash-card-link">Gestionar promociones →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Promociones</h3>
+            <p class="sub">Descuentos por día</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/admin/empleados">
@@ -245,9 +231,12 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
           </div>
           <span class="tag ok">{{ totalEmpleadosActivos }} activos</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Empleados (Cajeros y Repartidores)</h3>
-        <p class="sub" style="line-height:1.5">Da de alta o baja al personal y administra sus usuarios y contraseñas.</p>
-        <span class="dash-card-link">Gestionar personal →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Empleados</h3>
+            <p class="sub">Cajeros y repartidores</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/admin/reportes">
@@ -257,11 +246,14 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
               <path d="M5 20V10M12 20V4M19 20v-7"></path>
             </svg>
           </div>
-          <span class="tag">PDF / Excel</span>
+          <span class="tag">PDF · Excel</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Reportes y estadísticas</h3>
-        <p class="sub" style="line-height:1.5">Consulta ventas por periodo, platillos más vendidos y exporta resultados.</p>
-        <span class="dash-card-link">Generar reportes →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Reportes</h3>
+            <p class="sub">Métricas y exportación</p>
+          </div>
+        </div>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/admin/historial">
@@ -272,11 +264,14 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
               <path d="M12 8v4l3 2"></path>
             </svg>
           </div>
-          <span class="tag off">{{ totalVentasHoy }} registros</span>
+          <span class="tag off">{{ totalVentasHoy }} hoy</span>
         </div>
-        <h3 style="font-size:17px;font-weight:600">Historial de ventas</h3>
-        <p class="sub" style="line-height:1.5">Audita todas las ventas anteriores filtrando por fecha, tipo y pago.</p>
-        <span class="dash-card-link">Ver historial →</span>
+        <div class="dash-card-Bottom">
+          <div>
+            <h3>Historial</h3>
+            <p class="sub">Registro de ventas</p>
+          </div>
+        </div>
       </RouterLink>
     </div>
   </div>
@@ -287,19 +282,18 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  padding: 26px 30px;
+  padding: 26px 32px;
   background: linear-gradient(135deg, #CF520A 0%, #F26A1B 100%);
   color: #ffffff;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  box-shadow: 0 10px 26px rgba(201, 76, 8, 0.18);
+  box-shadow: 0 10px 26px rgba(201, 76, 8, 0.16);
 }
 
 .dash-hero-art {
   position: absolute;
-  right: -70px;
-  top: -80px;
+  right: -55px;
+  top: -75px;
   color: #ffffff;
   pointer-events: none;
   animation: slowSpin 38s linear infinite;
@@ -316,7 +310,7 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 
 .dash-hero-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
@@ -328,7 +322,7 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  padding: 4px 12px;
+  padding: 3px 11px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
   font-size: 12px;
@@ -338,39 +332,36 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 }
 
 .dash-greeting {
-  font-size: 28px;
+  font-size: 27px;
   font-weight: 600;
   line-height: 1.2;
-}
-
-.dash-subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 600px;
+  letter-spacing: -0.3px;
 }
 
 .dash-clock-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   color: #1F1A17;
   font-size: 13px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .dash-clock-sched {
   font-weight: 400;
   font-size: 12px;
   color: #6B625B;
+  padding-left: 4px;
+  border-left: 1px solid #ECE5DE;
 }
 
 .pulse-dot {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #2F7D4F;
   box-shadow: 0 0 0 0 rgba(47, 125, 79, 0.7);
@@ -389,41 +380,7 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
   }
 }
 
-.dash-stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-  position: relative;
-  z-index: 1;
-}
-
-.dash-stat-item {
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dash-stat-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.dash-stat-val {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.dash-cajero-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
+.dash-cajero-grid,
 .dash-admin-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -447,8 +404,8 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 .dash-cta-banner {
   grid-column: 1 / -1;
   background: var(--acs);
-  border: 1px solid var(--ac);
-  border-radius: 16px;
+  border: 1.5px solid var(--ac);
+  border-radius: 18px;
   padding: 24px 28px;
   display: flex;
   align-items: center;
@@ -461,12 +418,12 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 
 .dash-cta-banner:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(242, 106, 27, 0.14);
+  box-shadow: 0 12px 26px rgba(242, 106, 27, 0.14);
 }
 
 .dash-cta-icon {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 14px;
   background: var(--btn);
   color: #fff;
@@ -479,31 +436,68 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 .dash-cta-btn {
   height: 46px;
   padding: 0 24px;
-  font-size: 15px;
+  font-size: 14.5px;
+  border-radius: 12px;
   flex: none;
 }
 
 .dash-action-card {
   justify-content: space-between;
-  padding: 22px;
-  gap: 12px;
-  border-radius: 16px;
+  padding: 24px;
+  min-height: 158px;
+  border-radius: 18px;
 }
 
 .dash-ico {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, color 0.2s ease;
 }
 
 .dash-action-card:hover .dash-ico {
-  transform: scale(1.08) rotate(-4deg);
+  transform: scale(1.07) rotate(-4deg);
   background: var(--btn);
   color: #fff;
 }
 
-.dash-card-link {
-  font-size: 13px;
+.dash-card-Bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.dash-card-Bottom h3 {
+  font-size: 18px;
   font-weight: 600;
+  letter-spacing: -0.2px;
+  margin-bottom: 2px;
+}
+
+.dash-card-Bottom .sub {
+  font-size: 13px;
+}
+
+.dash-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg2);
+  color: var(--tx2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  flex: none;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.dash-action-card:hover .dash-arrow {
+  background: var(--acs);
   color: var(--act);
-  margin-top: 4px;
+  transform: translateX(3px);
 }
 </style>

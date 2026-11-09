@@ -77,10 +77,10 @@ const cartStore = useCartStore()
         :to="cartStore.items.length > 0 ? '/cajero/nueva-venta/datos' : undefined"
         :disabled="cartStore.items.length === 0"
       >
-        Continuar a datos →
+        Continuar a datos
       </BaseButton>
       <BaseButton variant="s" to="/cajero/nueva-venta">
-        ← Atrás
+        Atrás
       </BaseButton>
     </div>
   </aside>

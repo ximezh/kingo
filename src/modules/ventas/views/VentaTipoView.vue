@@ -20,10 +20,7 @@ function irAPasoDatos(tipo = null) {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h1 style="font-size:22px;font-weight:600">Nueva venta</h1>
-      <p class="sub">¿Cómo es el pedido?</p>
-    </div>
+    <h1 style="font-size:22px;font-weight:600">Nueva venta</h1>
     <StepIndicator :current-step="1" />
   </div>
 
@@ -61,7 +58,7 @@ function irAPasoDatos(tipo = null) {
         :class="cartStore.tipoPedido === 'local' ? 'p' : 's'"
         @click.stop="irAPasoDatos('local')"
       >
-        {{ cartStore.tipoPedido === 'local' ? 'Seleccionado · Continuar' : 'Elegir' }}
+        {{ cartStore.tipoPedido === 'local' ? 'Continuar' : 'Elegir' }}
       </span>
     </div>
 
@@ -90,7 +87,7 @@ function irAPasoDatos(tipo = null) {
 
       <div class="tipo-title-block">
         <h2>Para llevar</h2>
-        <p class="sub">Recolección en mostrador</p>
+        <p class="sub">En mostrador</p>
       </div>
 
       <span
@@ -98,7 +95,7 @@ function irAPasoDatos(tipo = null) {
         :class="cartStore.tipoPedido === 'llevar' ? 'p' : 's'"
         @click.stop="irAPasoDatos('llevar')"
       >
-        {{ cartStore.tipoPedido === 'llevar' ? 'Seleccionado · Continuar' : 'Elegir' }}
+        {{ cartStore.tipoPedido === 'llevar' ? 'Continuar' : 'Elegir' }}
       </span>
     </div>
 
@@ -129,7 +126,7 @@ function irAPasoDatos(tipo = null) {
 
       <div class="tipo-title-block">
         <h2>A domicilio</h2>
-        <p class="sub">Envío con repartidor</p>
+        <p class="sub">Con repartidor</p>
       </div>
 
       <span
@@ -137,7 +134,7 @@ function irAPasoDatos(tipo = null) {
         :class="cartStore.tipoPedido === 'domicilio' ? 'p' : 's'"
         @click.stop="irAPasoDatos('domicilio')"
       >
-        {{ cartStore.tipoPedido === 'domicilio' ? 'Seleccionado · Continuar' : 'Elegir' }}
+        {{ cartStore.tipoPedido === 'domicilio' ? 'Continuar' : 'Elegir' }}
       </span>
     </div>
   </div>
@@ -148,7 +145,7 @@ function irAPasoDatos(tipo = null) {
         <circle cx="12" cy="12" r="9"></circle>
         <path d="M12 7v5l3 2"></path>
       </svg>
-      <span>Los pedidos a domicilio se reciben de 13:00 a 21:00. Los miércoles no hay servicio.</span>
+      <span>Horario: 13:00 a 21:00 · Miércoles cerrado</span>
     </div>
     <BaseButton variant="p" href="#" @click.prevent="irAPasoDatos()">
       Continuar

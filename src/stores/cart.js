@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { HISTORIAL_VENTAS_MOCK } from '@/services/ventas.service'
-import { PEDIDOS_POR_ASIGNAR_MOCK } from '@/services/entregas.service'
+import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
+import { PEDIDOS_POR_ASIGNAR_MOCK, guardarEntregasStorage } from '@/services/entregas.service'
 
 export const TIPO_PEDIDO_INFO = {
   local: {
@@ -205,14 +205,23 @@ export const useCartStore = defineStore('cart', () => {
 
     // Si viene con extras personalizados desde el modal de extras
     if (opciones.extras && opciones.extras.length > 0) {
-      const costoExtras = opciones.extras.reduce((acc, ex) => acc + ex.costo, 0)
-      const nombresExtras = opciones.extras.map((ex) => `${ex.nombre} (+$${ex.costo})`).join(', ')
+      const precioProdBase = Number(prod.precio) || 0
+      const costoExtras = opciones.extras.reduce(
+        (acc, ex) => acc + (Number(ex.costo) || Number(String(ex.precio).replace(/[^0-9.]/g, '')) || 0),
+        0
+      )
+      const nombresExtras = opciones.extras
+        .map((ex) => {
+          const c = Number(ex.costo) || Number(String(ex.precio).replace(/[^0-9.]/g, '')) || 0
+          return `${ex.nombre} (+$${c})`
+        })
+        .join(', ')
       const partesDetalle = []
       if (textoCarnes) partesDetalle.push(textoCarnes)
       partesDetalle.push(`Extra: ${nombresExtras}`)
       if (opciones.notaCocina) partesDetalle.push(`Nota: ${opciones.notaCocina}`)
       const detalleCompleto = partesDetalle.join(' · ')
-      const precioUnit = prod.precio + costoExtras
+      const precioUnit = precioProdBase + costoExtras
 
       items.value.push({
         id: Date.now() + Math.random(),
@@ -222,7 +231,7 @@ export const useCartStore = defineStore('cart', () => {
         carnesSeleccionadas: carnesElegidas,
         extrasSeleccionados: opciones.extras.map((e) => e.nombre),
         cantidad: opciones.cantidad || 1,
-        precioBase: prod.precio,
+        precioBase: precioProdBase,
         precioUnitario: precioUnit,
         subtotal: precioUnit * (opciones.cantidad || 1)
       })
@@ -263,9 +272,17 @@ export const useCartStore = defineStore('cart', () => {
   function actualizarExtrasItem(itemId, listaExtras, notaCocina = '', nuevasCarnes = null) {
     const item = items.value.find((i) => i.id === itemId)
     if (!item) return
-    const base = item.precioBase || item.precioUnitario
-    const costoExtras = listaExtras.reduce((acc, ex) => acc + ex.costo, 0)
-    const nombresExtras = listaExtras.map((ex) => `${ex.nombre} (+$${ex.costo})`).join(', ')
+    const base = Number(item.precioBase || item.precioUnitario || 0)
+    const costoExtras = listaExtras.reduce(
+      (acc, ex) => acc + (Number(ex.costo) || Number(String(ex.precio).replace(/[^0-9.]/g, '')) || 0),
+      0
+    )
+    const nombresExtras = listaExtras
+      .map((ex) => {
+        const c = Number(ex.costo) || Number(String(ex.precio).replace(/[^0-9.]/g, '')) || 0
+        return `${ex.nombre} (+$${c})`
+      })
+      .join(', ')
     const carnes = Array.isArray(nuevasCarnes) ? nuevasCarnes : item.carnesSeleccionadas || []
     const textoCarnes =
       carnes.length === 1
@@ -322,6 +339,9 @@ export const useCartStore = defineStore('cart', () => {
       tipo: mapTipo[tipoPedido.value],
       tipoCodigo: tipoPedido.value,
       clienteMesa,
+      telefono: datosCliente.value.telefono,
+      direccion: datosCliente.value.direccion,
+      referencia: datosCliente.value.referencia,
       pago: metodoPago.value,
       subtotal: subtotal.value,
       descuento: descuento.value,
@@ -335,6 +355,7 @@ export const useCartStore = defineStore('cart', () => {
     }
 
     HISTORIAL_VENTAS_MOCK.unshift(nuevaVenta)
+    guardarVentasStorage()
 
     if (tipoPedido.value === 'domicilio') {
       PEDIDOS_POR_ASIGNAR_MOCK.unshift({
@@ -349,6 +370,7 @@ export const useCartStore = defineStore('cart', () => {
         telefonoDireccion: `${datosCliente.value.telefono} · ${datosCliente.value.direccion}`,
         referencia: datosCliente.value.referencia ? `Referencia: ${datosCliente.value.referencia}` : ''
       })
+      guardarEntregasStorage()
     }
 
     // Guardar en PostgreSQL (base de datos 'kingo') a través del Backend Node.js
@@ -387,6 +409,7 @@ export const useCartStore = defineStore('cart', () => {
       .then((data) => {
         if (data?.ok && data.folio) {
           nuevaVenta.folio = data.folio
+          guardarVentasStorage()
         }
       })
       .catch(() => {

@@ -1,7 +1,45 @@
 import { ref, reactive } from 'vue'
 
-// Inicializado vacío: se agregan pedidos conforme se registran ventas a domicilio
-export const PEDIDOS_POR_ASIGNAR_MOCK = reactive([])
+const STORAGE_POR_ASIGNAR_KEY = 'kingo_pedidos_por_asignar_v2'
+const STORAGE_REPARTIDOR_KEY = 'kingo_pedidos_repartidor_v2'
+
+function cargarPorAsignar() {
+  try {
+    const saved = localStorage.getItem(STORAGE_POR_ASIGNAR_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return []
+}
+
+function cargarRepartidorPedidos() {
+  try {
+    const saved = localStorage.getItem(STORAGE_REPARTIDOR_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return []
+}
+
+export const PEDIDOS_POR_ASIGNAR_MOCK = reactive(cargarPorAsignar())
+export const pedidosRepartidorState = ref(cargarRepartidorPedidos())
+
+export function guardarEntregasStorage() {
+  try {
+    localStorage.setItem(STORAGE_POR_ASIGNAR_KEY, JSON.stringify(PEDIDOS_POR_ASIGNAR_MOCK))
+    localStorage.setItem(STORAGE_REPARTIDOR_KEY, JSON.stringify(pedidosRepartidorState.value))
+  } catch {
+    // ignore
+  }
+}
 
 export const REPARTIDORES_MOCK = [
   {
@@ -13,14 +51,12 @@ export const REPARTIDORES_MOCK = [
   }
 ]
 
-export const pedidosRepartidorState = ref([])
-
 export async function sincronizarEntregasDesdeDB() {
   try {
     const res = await fetch('http://localhost:3000/api/entregas/pedidos')
     if (res.ok) {
       const lista = await res.json()
-      if (Array.isArray(lista)) {
+      if (Array.isArray(lista) && lista.length > 0) {
         const porAsignar = lista
           .filter((p) => p.estado === 'Por asignar')
           .map((p) => ({
@@ -37,6 +73,7 @@ export async function sincronizarEntregasDesdeDB() {
           }))
         PEDIDOS_POR_ASIGNAR_MOCK.splice(0, PEDIDOS_POR_ASIGNAR_MOCK.length, ...porAsignar)
         pedidosRepartidorState.value = lista.filter((p) => p.estado !== 'Por asignar')
+        guardarEntregasStorage()
       }
     }
   } catch {

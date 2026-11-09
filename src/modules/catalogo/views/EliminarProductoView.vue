@@ -9,10 +9,7 @@ const mostrarModal = ref(true)
 </script>
 
 <template>
-  <div style="display:flex;flex-direction:column;gap:4px">
-    <h1 style="font-size:22px;font-weight:600">Productos</h1>
-    <p class="sub">Menú digital de Kin Sushi</p>
-  </div>
+  <h1 style="font-size:22px;font-weight:600">Productos</h1>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:18px">
     <ProductoCard

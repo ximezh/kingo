@@ -27,21 +27,25 @@ function onBackdropClick(e) {
 <template>
   <div
     v-if="modelValue"
-    style="position:absolute;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:50"
+    style="position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px"
     @click="onBackdropClick"
   >
     <div
       role="dialog"
       :aria-label="ariaLabel"
       :style="{
-        width: width,
+        width: '100%',
+        maxWidth: width,
+        maxHeight: '90vh',
+        overflowY: 'auto',
         background: 'var(--sf)',
         border: '1px solid var(--bd)',
         borderRadius: '18px',
         padding: '28px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '16px'
+        gap: '16px',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.22)'
       }"
     >
       <slot />

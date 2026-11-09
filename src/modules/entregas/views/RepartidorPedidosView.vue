@@ -75,15 +75,8 @@ function handleLogout() {
       style="align-items:center;justify-content:center;padding:36px 20px;text-align:center;gap:8px;border-radius:16px"
     >
       <div style="font-size:15px;font-weight:600">
-        {{ activeTab === 'por_entregar' ? 'No tienes entregas pendientes' : 'Aún no hay entregas finalizadas' }}
+        {{ activeTab === 'por_entregar' ? 'Sin entregas pendientes' : 'Sin entregas finalizadas' }}
       </div>
-      <p class="sub">
-        {{
-          activeTab === 'por_entregar'
-            ? '¡Excelente trabajo! Has completado todos tus pedidos en ruta.'
-            : 'Los pedidos que marques como entregados aparecerán aquí.'
-        }}
-      </p>
     </div>
   </div>
 </template>

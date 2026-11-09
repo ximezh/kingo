@@ -33,9 +33,9 @@ const emit = defineEmits(['update:modelValue', 'cancel', 'deactivate'])
     >
       !
     </div>
-    <h2 style="font-size:20px;font-weight:600">No se puede eliminar {{ nombreProducto }}</h2>
-    <p style="font-size:14px;line-height:1.6;color:var(--tx2)">
-      Este producto forma parte de un paquete activo. Puedes desactivarlo para que ya no aparezca en el menú ni en ventas nuevas. Las ventas anteriores se conservan.
+    <h2 style="font-size:19px;font-weight:600">No se puede eliminar {{ nombreProducto }}</h2>
+    <p style="font-size:13.5px;line-height:1.55;color:var(--tx2)">
+      Forma parte de un paquete activo. Puedes desactivarlo para ocultarlo del menú sin afectar el historial.
     </p>
     <div class="row" style="gap:8px">
       <span class="sub">Incluido en:</span>

@@ -82,18 +82,25 @@ function confirmarYRegistrarVenta() {
 }
 
 function irANuevaVenta() {
+  ventaConfirmada.value = null
   showVentaRegistradaModal.value = false
   cartStore.iniciarNuevaVentaLimpia()
   router.push('/cajero/nueva-venta')
 }
 
 function irAAsignarRepartidor() {
+  const folioDestino = ventaConfirmada.value?.folio || ''
+  ventaConfirmada.value = null
   showVentaRegistradaModal.value = false
   cartStore.iniciarNuevaVentaLimpia()
-  router.push('/cajero/domicilios')
+  router.push({
+    path: '/cajero/domicilios',
+    query: folioDestino ? { folio: folioDestino } : {}
+  })
 }
 
 function irAlHistorial() {
+  ventaConfirmada.value = null
   showVentaRegistradaModal.value = false
   cartStore.iniciarNuevaVentaLimpia()
   router.push('/cajero/historial')
@@ -102,10 +109,7 @@ function irAlHistorial() {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h1 style="font-size:22px;font-weight:600">Resumen y pago</h1>
-      <p class="sub">Revisa el desglose del pedido y selecciona el método de pago para finalizar.</p>
-    </div>
+    <h1 style="font-size:22px;font-weight:600">Resumen y pago</h1>
     <StepIndicator :current-step="4" />
   </div>
 
@@ -184,10 +188,10 @@ function irAlHistorial() {
             :placeholder="`Mínimo $${totalMostrar}`"
           />
           <div v-if="montoFaltante > 0" style="font-size:12px;color:#C94C08;font-weight:500">
-            Monto insuficiente: faltan ${{ montoFaltante.toFixed(2) }} para cubrir el total.
+            Faltan ${{ montoFaltante.toFixed(2) }} por cubrir.
           </div>
           <div v-else class="row" style="justify-content:space-between;font-size:14px">
-            <span class="sub">Cambio a devolver:</span>
+            <span class="sub">Cambio:</span>
             <strong style="color:var(--ok);font-size:16px">${{ cambioDevolver.toFixed(2) }}</strong>
           </div>
         </div>
@@ -212,7 +216,7 @@ function irAlHistorial() {
         >
           Confirmar venta
         </BaseButton>
-        <BaseButton variant="s" to="/cajero/nueva-venta/datos">← Atrás a datos</BaseButton>
+        <BaseButton variant="s" to="/cajero/nueva-venta/datos">Atrás</BaseButton>
       </section>
     </aside>
   </div>
@@ -221,19 +225,16 @@ function irAlHistorial() {
   <BaseModal
     v-model="showVentaRegistradaModal"
     aria-label="Venta registrada exitosamente"
-    width="480px"
+    width="460px"
   >
-    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding-top:4px">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding-top:4px">
       <div class="venta-ok-badge">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 6L9 17l-5-5"></path>
         </svg>
       </div>
-      <h2 style="font-size:22px;font-weight:600">¡Venta registrada!</h2>
-      <p class="sub">
-        La orden se guardó correctamente en el sistema con el folio
-        <strong style="color:var(--tx)">{{ ventaConfirmada?.folio }}</strong>.
-      </p>
+      <h2 style="font-size:21px;font-weight:600">Venta registrada</h2>
+      <StatusTag variant="ok">Folio {{ ventaConfirmada?.folio }}</StatusTag>
     </div>
 
     <div v-if="ventaConfirmada" class="venta-resumen-box">

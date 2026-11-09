@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
-import { CATEGORIAS_VENTA_MOCK, PRODUCTOS_MENU_VENTA_MOCK } from '@/services/ventas.service'
+import { CATEGORIAS_VENTA_MOCK, PRODUCTOS_MENU_VENTA_MOCK, reconstruirMenuVenta } from '@/services/ventas.service'
 import { EXTRAS_DISPONIBLES_MOCK, ROLLOS_PROMO_MOCK } from '@/services/catalogo.service'
 import { esPromo2x1ValidaHoy } from '@/services/promociones.service'
 import StepIndicator from '@/components/ui/StepIndicator.vue'
@@ -14,6 +14,8 @@ const cartStore = useCartStore()
 const busqueda = ref('')
 const categoriaActiva = ref('Todo')
 
+reconstruirMenuVenta()
+
 // Solo Lunes y Martes es válida la promoción 2x1
 const promoValidaHoy = computed(() => esPromo2x1ValidaHoy())
 
@@ -22,12 +24,7 @@ const categoriasVisibles = computed(() => {
   return CATEGORIAS_VENTA_MOCK.filter((c) => c !== 'Promociones')
 })
 
-const productosMenu = ref(
-  PRODUCTOS_MENU_VENTA_MOCK.map((p) => ({
-    ...p,
-    variantes: p.variantes ? p.variantes.map((v) => ({ ...v })) : null
-  }))
-)
+const productosMenu = computed(() => PRODUCTOS_MENU_VENTA_MOCK)
 
 // Modal Promoción 2x1
 const showPromo2x1Modal = ref(false)
@@ -54,6 +51,28 @@ const extrasCheck = ref([])
 const notaExtraCocina = ref('')
 const cantidadModal = ref(1)
 const carnesModalExtras = ref([])
+
+// Mini ventana de descripción / ingredientes del platillo
+const showInfoProdModal = ref(false)
+const productoInfoActivo = ref(null)
+
+function abrirInfoProducto(prod) {
+  productoInfoActivo.value = prod
+  showInfoProdModal.value = true
+}
+
+function accionarDesdeInfoModal(prod) {
+  showInfoProdModal.value = false
+  if (prod.tipoCard === 'promo_2x1') {
+    abrirModalPromo2x1()
+  } else if (prod.tipoCard === 'paquete_sushi') {
+    abrirModalPaqueteSushi()
+  } else if (prod.tipoCard === 'variantes') {
+    agregarVarianteSeleccionada(prod)
+  } else {
+    clickAgregarProducto(prod)
+  }
+}
 
 const productosFiltrados = computed(() => {
   const q = busqueda.value.trim().toLowerCase()
@@ -192,12 +211,24 @@ function confirmarPaqueteSushi() {
 }
 
 // Variantes y extras
+const extrasPermitidosLista = computed(() =>
+  EXTRAS_DISPONIBLES_MOCK.filter((e) => e.seleccionado !== false)
+)
+
 const costoExtrasModal = computed(() => {
-  return extrasCheck.value.reduce((acc, ex) => acc + ex.costo, 0)
+  return extrasCheck.value.reduce(
+    (acc, ex) => acc + (Number(ex.costo) || Number(String(ex.precio).replace(/[^0-9.]/g, '')) || 0),
+    0
+  )
 })
 
 const totalModalExtras = computed(() => {
-  const base = productoParaExtras.value?.precio || itemCarritoParaExtras.value?.precioBase || itemCarritoParaExtras.value?.precioUnitario || 0
+  const base = Number(
+    productoParaExtras.value?.precio ||
+      itemCarritoParaExtras.value?.precioBase ||
+      itemCarritoParaExtras.value?.precioUnitario ||
+      0
+  )
   return (base + costoExtrasModal.value) * cantidadModal.value
 })
 
@@ -245,6 +276,16 @@ function confirmarModalCarnes() {
 }
 
 function abrirModalExtrasProducto(prod) {
+  // Si el platillo ya está en el pedido actual, editar directamente sus extras
+  const existenteEnCarrito = [...cartStore.items]
+    .reverse()
+    .find((i) => i.nombre === prod.nombre && !i.promocion)
+
+  if (existenteEnCarrito) {
+    abrirModalExtrasDesdeCarrito(existenteEnCarrito)
+    return
+  }
+
   productoParaExtras.value = prod
   itemCarritoParaExtras.value = null
   extrasCheck.value = []
@@ -305,10 +346,7 @@ function limpiarBusquedaVenta() {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h1 style="font-size:22px;font-weight:600">Productos del pedido</h1>
-      <p class="sub">Toca un producto para agregarlo.</p>
-    </div>
+    <h1 style="font-size:22px;font-weight:600">Productos del pedido</h1>
     <StepIndicator :current-step="2" />
   </div>
 
@@ -368,8 +406,43 @@ function limpiarBusquedaVenta() {
           :key="prod.id"
           class="card venta-item-card"
         >
-          <div :class="['ph', { no: !prod.tieneFoto }]">
-            {{ prod.tieneFoto ? 'Foto' : 'Sin foto' }}
+          <div :class="['ph', { no: !prod.tieneFoto && !prod.imagenUrl }]">
+            <img
+              v-if="prod.imagenUrl"
+              :src="prod.imagenUrl"
+              :alt="prod.nombre"
+              loading="lazy"
+              class="prod-img"
+            >
+            <svg
+              v-else
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="8" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+
+            <button
+              type="button"
+              class="prod-info-btn"
+              title="Ver qué lleva este platillo"
+              aria-label="Ver qué lleva este platillo"
+              @click.stop="abrirInfoProducto(prod)"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
           </div>
 
           <div class="nm">{{ prod.nombre }}</div>
@@ -708,7 +781,7 @@ function limpiarBusquedaVenta() {
 
     <div class="extras-modal-grid" style="max-height:260px;overflow-y:auto;padding-right:4px">
       <label
-        v-for="ex in EXTRAS_DISPONIBLES_MOCK"
+        v-for="ex in extrasPermitidosLista"
         :key="ex.id"
         :class="['extra-option-box', { on: isExtraMarcado(ex) }]"
       >
@@ -743,6 +816,57 @@ function limpiarBusquedaVenta() {
         </BaseButton>
       </div>
     </div>
+  </BaseModal>
+
+  <!-- ========================================================================= -->
+  <!-- MINI VENTANA DE INGREDIENTES / DESCRIPCIÓN DEL PLATILLO                   -->
+  <!-- ========================================================================= -->
+  <BaseModal
+    v-model="showInfoProdModal"
+    aria-label="Descripción del platillo"
+    width="380px"
+  >
+    <template v-if="productoInfoActivo">
+      <div v-if="productoInfoActivo.imagenUrl" class="info-modal-photo">
+        <img :src="productoInfoActivo.imagenUrl" :alt="productoInfoActivo.nombre">
+      </div>
+
+      <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="row" style="gap:6px;flex-wrap:wrap">
+            <StatusTag>{{ productoInfoActivo.categoria }}</StatusTag>
+            <span v-if="productoInfoActivo.presentacion" class="sub" style="font-size:12px">
+              {{ productoInfoActivo.presentacion }}
+            </span>
+          </div>
+          <h2 style="font-size:18px;font-weight:600;line-height:1.25">{{ productoInfoActivo.nombre }}</h2>
+        </div>
+        <span style="font-size:17px;font-weight:600;color:var(--act);white-space:nowrap">
+          <template v-if="productoInfoActivo.tipoCard === 'promo_2x1'">2x1</template>
+          <template v-else-if="productoInfoActivo.tipoCard === 'paquete_sushi'">5x4</template>
+          <template v-else-if="productoInfoActivo.tipoCard === 'variantes'">
+            {{ productoInfoActivo.variantes?.map((v) => v.label).join(' / ') }}
+          </template>
+          <template v-else>${{ productoInfoActivo.precio }}</template>
+        </span>
+      </div>
+
+      <div class="info-desc-box">
+        <span class="info-desc-label">Ingredientes / Qué incluye</span>
+        <p style="font-size:14px;line-height:1.5;color:var(--tx)">
+          {{ productoInfoActivo.descripcion || productoInfoActivo.subtitulo || 'Sin descripción adicional registrada para este platillo.' }}
+        </p>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;gap:8px;padding-top:2px">
+        <BaseButton variant="s" href="#" @click.prevent="showInfoProdModal = false">
+          Cerrar
+        </BaseButton>
+        <BaseButton variant="p" href="#" @click.prevent="accionarDesdeInfoModal(productoInfoActivo)">
+          {{ productoInfoActivo.numCarnes > 0 || productoInfoActivo.tipoCard === 'promo_2x1' || productoInfoActivo.tipoCard === 'paquete_sushi' ? 'Elegir' : 'Agregar al pedido' }}
+        </BaseButton>
+      </div>
+    </template>
   </BaseModal>
 </template>
 
@@ -783,27 +907,100 @@ function limpiarBusquedaVenta() {
 }
 
 .venta-item-card {
-  padding: 10px;
-  gap: 6px;
-  border-radius: 14px;
+  padding: 12px;
+  gap: 8px;
+  border-radius: 15px;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.venta-item-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--ac);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
 }
 
 .ph {
   background: var(--acs);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--act);
-  font-size: 12px;
-  font-weight: 500;
-  height: 58px;
+  height: 82px;
+  overflow: hidden;
+  position: relative;
+}
+
+.prod-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.prod-info-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(31, 26, 23, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #1F1A17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 0.16s ease, background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.prod-info-btn:hover {
+  transform: scale(1.1);
+  background: var(--btn);
+  color: #ffffff;
+  border-color: var(--btn);
+}
+
+.info-modal-photo {
+  width: 100%;
+  height: 145px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg2);
+}
+
+.info-modal-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.info-desc-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg2);
+  border: 1.5px solid var(--bd);
+}
+
+.info-desc-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .ph.no {
-  background: transparent;
-  border: 1px dashed var(--bd);
+  background: var(--bg2);
   color: var(--tx2);
+  opacity: 0.72;
 }
 
 .chip-sm {

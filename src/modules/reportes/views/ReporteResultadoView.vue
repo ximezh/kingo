@@ -198,26 +198,18 @@ function confirmarDescargaReporte() {
     aria-label="Exportar reporte con nombre personalizado"
     width="480px"
   >
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h2 style="font-size:19px;font-weight:600">
-        Exportar reporte en {{ formatoExportar === 'pdf' ? 'PDF' : 'Excel (.csv)' }}
-      </h2>
-      <p class="sub">
-        Se generó automáticamente el nombre del archivo según el tipo de reporte y periodo seleccionados. Puedes personalizarlo si lo deseas.
-      </p>
-    </div>
+    <h2 style="font-size:19px;font-weight:600">
+      Exportar {{ formatoExportar === 'pdf' ? 'PDF' : 'Excel (.csv)' }}
+    </h2>
 
-    <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;flex-direction:column;gap:8px">
       <BaseInput
         id="rep-fname"
         v-model="nombreArchivoPersonalizado"
         :label="`Nombre del archivo (${formatoExportar === 'pdf' ? '.pdf' : '.csv'})`"
         type="text"
       />
-      <div class="row" style="justify-content:space-between">
-        <span class="sub" style="font-size:12px">
-          Vista previa: <strong>{{ nombreArchivoPersonalizado || 'Reporte_KinGo' }}.{{ formatoExportar === 'pdf' ? 'pdf' : 'csv' }}</strong>
-        </span>
+      <div class="row" style="justify-content:flex-end">
         <a href="#" class="edit" style="font-size:12px" @click.prevent="regenerarNombreAutomatico">
           Restaurar nombre automático
         </a>

@@ -1,3 +1,5 @@
+import { reactive } from 'vue'
+
 export const MENU_OFICIAL_JSON = {
   categorias: [
     {
@@ -274,7 +276,12 @@ const CATEGORIAS_CON_EXTRAS = new Set([
   'Sopas'
 ])
 
-export const PRODUCTOS_MOCK = MENU_OFICIAL_JSON.categorias.flatMap((catObj) =>
+const STORAGE_PRODUCTOS_KEY = 'kingo_productos_v2'
+const STORAGE_PAQUETES_KEY = 'kingo_paquetes_v2'
+const STORAGE_VARIANTES_KEY = 'kingo_variantes_v2'
+const STORAGE_EXTRAS_KEY = 'kingo_extras_v2'
+
+const PRODUCTOS_BASE = MENU_OFICIAL_JSON.categorias.flatMap((catObj) =>
   catObj.productos.map((prod) => ({
     id: prod.id,
     nombre: prod.nombre,
@@ -285,7 +292,8 @@ export const PRODUCTOS_MOCK = MENU_OFICIAL_JSON.categorias.flatMap((catObj) =>
     precio: prod.precio ?? (prod.variantes ? prod.variantes[0].precio : 440),
     precioNulo: prod.precio === null && !prod.variantes,
     variantes: prod.variantes || null,
-    tieneFoto: prod.id % 5 !== 0,
+    imagenUrl: prod.imagenUrl || `/img/productos/${prod.id}.jpg?v=2`,
+    tieneFoto: true,
     activo: true,
     permiteExtras: CATEGORIAS_CON_EXTRAS.has(catObj.categoria),
     enPaquete: prod.id === 1 ? 'Paquete 1' : null,
@@ -293,19 +301,78 @@ export const PRODUCTOS_MOCK = MENU_OFICIAL_JSON.categorias.flatMap((catObj) =>
   }))
 )
 
-export const ROLLOS_PROMO_MOCK = PRODUCTOS_MOCK.filter((p) =>
-  ['Barra de Sushi', 'Empanizados', 'Afrutados'].includes(p.categoria)
-).map((p) => ({
-  ...p,
-  precioNum: p.precio
-}))
+function cargarProductosIniciales() {
+  try {
+    const saved = localStorage.getItem(STORAGE_PRODUCTOS_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((p) => {
+          const esCustomDataUrl = typeof p.imagenUrl === 'string' && p.imagenUrl.startsWith('data:')
+          return {
+            ...p,
+            imagenUrl: esCustomDataUrl
+              ? p.imagenUrl
+              : p.id && p.id <= 155
+                ? `/img/productos/${p.id}.jpg?v=2`
+                : p.imagenUrl || null,
+            tieneFoto: true
+          }
+        })
+      }
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return PRODUCTOS_BASE.map((p) => ({ ...p }))
+}
 
-export const VARIANTES_TE_VERDE_MOCK = [
+export const PRODUCTOS_MOCK = reactive(cargarProductosIniciales())
+
+export const ROLLOS_PROMO_MOCK = reactive([])
+
+export function actualizarRollosPromo() {
+  const rollos = PRODUCTOS_MOCK.filter(
+    (p) => p.activo !== false && ['Barra de Sushi', 'Empanizados', 'Afrutados'].includes(p.categoria)
+  ).map((p) => ({
+    ...p,
+    precioNum: Number(p.precio) || 110
+  }))
+  ROLLOS_PROMO_MOCK.splice(0, ROLLOS_PROMO_MOCK.length, ...rollos)
+}
+
+actualizarRollosPromo()
+
+export function guardarProductosStorage() {
+  try {
+    localStorage.setItem(STORAGE_PRODUCTOS_KEY, JSON.stringify(PRODUCTOS_MOCK))
+  } catch {
+    // ignore quota errors
+  }
+  actualizarRollosPromo()
+}
+
+const VARIANTES_BASE = [
   { id: 1, nombre: 'Chico', precio: '$40' },
   { id: 2, nombre: 'Grande', precio: '$70' }
 ]
 
-export const EXTRAS_DISPONIBLES_MOCK = MENU_OFICIAL_JSON.categorias
+function cargarVariantesIniciales() {
+  try {
+    const saved = localStorage.getItem(STORAGE_VARIANTES_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return VARIANTES_BASE.map((v) => ({ ...v }))
+}
+
+export const VARIANTES_TE_VERDE_MOCK = reactive(cargarVariantesIniciales())
+
+const EXTRAS_BASE = MENU_OFICIAL_JSON.categorias
   .find((c) => c.categoria === 'Orden Extra')
   .productos.map((p) => ({
     id: p.id,
@@ -318,7 +385,41 @@ export const EXTRAS_DISPONIBLES_MOCK = MENU_OFICIAL_JSON.categorias
     seleccionado: false
   }))
 
-export const PAQUETES_MOCK = [
+function cargarExtrasIniciales() {
+  try {
+    const saved = localStorage.getItem(STORAGE_EXTRAS_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return EXTRAS_BASE.map((e) => ({ ...e }))
+}
+
+export const EXTRAS_DISPONIBLES_MOCK = reactive(cargarExtrasIniciales())
+
+export function guardarVariantesExtrasStorage(nuevasVariantes, nuevosExtras) {
+  if (Array.isArray(nuevasVariantes)) {
+    VARIANTES_TE_VERDE_MOCK.splice(0, VARIANTES_TE_VERDE_MOCK.length, ...nuevasVariantes)
+    try {
+      localStorage.setItem(STORAGE_VARIANTES_KEY, JSON.stringify(VARIANTES_TE_VERDE_MOCK))
+    } catch {
+      // ignore
+    }
+  }
+  if (Array.isArray(nuevosExtras)) {
+    EXTRAS_DISPONIBLES_MOCK.splice(0, EXTRAS_DISPONIBLES_MOCK.length, ...nuevosExtras)
+    try {
+      localStorage.setItem(STORAGE_EXTRAS_KEY, JSON.stringify(EXTRAS_DISPONIBLES_MOCK))
+    } catch {
+      // ignore
+    }
+  }
+}
+
+const PAQUETES_BASE = [
   {
     id: 123,
     nombre: 'Paquete Sushi',
@@ -457,6 +558,32 @@ export const PAQUETES_MOCK = [
     ]
   }
 ]
+
+function cargarPaquetesIniciales() {
+  try {
+    const saved = localStorage.getItem(STORAGE_PAQUETES_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return PAQUETES_BASE.map((p) => ({
+    ...p,
+    itemsIncluidos: (p.itemsIncluidos || []).map((i) => ({ ...i }))
+  }))
+}
+
+export const PAQUETES_MOCK = reactive(cargarPaquetesIniciales())
+
+export function guardarPaquetesStorage() {
+  try {
+    localStorage.setItem(STORAGE_PAQUETES_KEY, JSON.stringify(PAQUETES_MOCK))
+  } catch {
+    // ignore
+  }
+}
 
 export async function getProductos() {
   return PRODUCTOS_MOCK

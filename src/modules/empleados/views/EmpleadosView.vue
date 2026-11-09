@@ -132,12 +132,9 @@ function guardarEmpleado() {
 
 <template>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h1 style="font-size:22px;font-weight:600">Gestión de empleados</h1>
-      <p class="sub">Da de alta, edita o da de baja a cajeros y repartidores con sus credenciales de acceso.</p>
-    </div>
+    <h1 style="font-size:22px;font-weight:600">Empleados</h1>
     <BaseButton variant="p" href="#" @click.prevent="abrirModalNuevo">
-      + Dar de alta empleado
+      + Nuevo empleado
     </BaseButton>
   </div>
 
@@ -145,17 +142,14 @@ function guardarEmpleado() {
     <div class="emp-kpi">
       <span class="sub">Personal activo</span>
       <b>{{ totalActivos }}</b>
-      <span class="sub" style="font-size:12px">De {{ empleadosState.length }} registrados</span>
     </div>
     <div class="emp-kpi">
-      <span class="sub">Cajeros activos</span>
+      <span class="sub">Cajeros</span>
       <b>{{ totalCajeros }}</b>
-      <span class="sub" style="font-size:12px">Atención en caja y mostrador</span>
     </div>
     <div class="emp-kpi">
-      <span class="sub">Repartidores activos</span>
+      <span class="sub">Repartidores</span>
       <b>{{ totalRepartidores }}</b>
-      <span class="sub" style="font-size:12px">Entregas a domicilio</span>
     </div>
   </div>
 
@@ -267,12 +261,9 @@ function guardarEmpleado() {
     :aria-label="editandoId ? 'Editar empleado' : 'Dar de alta empleado'"
     width="520px"
   >
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <h2 style="font-size:20px;font-weight:600">
-        {{ editandoId ? 'Editar empleado' : 'Dar de alta nuevo empleado' }}
-      </h2>
-      <p class="sub">Configura sus datos personales, rol en el sistema y credenciales de acceso.</p>
-    </div>
+    <h2 style="font-size:19px;font-weight:600">
+      {{ editandoId ? 'Editar empleado' : 'Nuevo empleado' }}
+    </h2>
 
     <div style="display:flex;flex-direction:column;gap:14px">
       <BaseInput
@@ -283,7 +274,7 @@ function guardarEmpleado() {
       />
 
       <div>
-        <span class="lbl">Rol en KinGo *</span>
+        <span class="lbl">Rol *</span>
         <div class="seg">
           <span :class="{ on: form.rol === 'cajero' }" @click="form.rol = 'cajero'">Cajero</span>
           <span :class="{ on: form.rol === 'repartidor' }" @click="form.rol = 'repartidor'">Repartidor</span>
@@ -295,7 +286,7 @@ function guardarEmpleado() {
         <BaseInput
           id="emp-usr"
           v-model="form.usuario"
-          label="Usuario de acceso *"
+          label="Usuario *"
           placeholder="Ej. sofia.caja"
         />
         <BaseInput
@@ -311,11 +302,11 @@ function guardarEmpleado() {
         <BaseInput
           id="emp-tel"
           v-model="form.telefono"
-          label="Teléfono celular (10 dígitos) *"
+          label="Teléfono (10 dígitos) *"
           placeholder="Ej. 2292458810"
         />
         <div>
-          <label class="lbl" for="emp-turno">Turno asignado</label>
+          <label class="lbl" for="emp-turno">Turno</label>
           <select id="emp-turno" v-model="form.turno" class="inp">
             <option>Completo (13:00 - 21:00)</option>
             <option>Vespertino (15:00 - 21:00)</option>
@@ -330,7 +321,7 @@ function guardarEmpleado() {
           type="checkbox"
           style="width:18px;height:18px;accent-color:#C94C08"
         >
-        Cuenta activa (puede iniciar sesión)
+        Cuenta activa
       </label>
 
       <div

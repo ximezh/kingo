@@ -1,18 +1,43 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { ref, computed, watchEffect } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import StatusTag from '@/components/ui/StatusTag.vue'
-import { PEDIDOS_POR_ASIGNAR_MOCK, pedidosRepartidorState } from '@/services/entregas.service'
+import { PEDIDOS_POR_ASIGNAR_MOCK, pedidosRepartidorState, guardarEntregasStorage } from '@/services/entregas.service'
 import { empleadosState } from '@/services/empleados.service'
-import { HISTORIAL_VENTAS_MOCK } from '@/services/ventas.service'
+import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
 
+const route = useRoute()
 const router = useRouter()
+
+// Sincronizar cualquier venta "Por asignar" del historial que aún no esté en la cola
+for (const v of HISTORIAL_VENTAS_MOCK) {
+  if (v.estado === 'Por asignar' && !PEDIDOS_POR_ASIGNAR_MOCK.some((p) => p.folio === v.folio)) {
+    PEDIDOS_POR_ASIGNAR_MOCK.push({
+      folio: v.folio,
+      cliente: v.clienteMesa,
+      telefono: v.telefono || '2290000000',
+      direccion: v.direccion || 'Domicilio registrado en caja',
+      total: v.total,
+      metodoPago: `Total · ${v.pago || 'Efectivo'}`,
+      envio: v.envio ? `$${v.envio}` : '$35',
+      lineas: (v.itemsSnapshot || []).map((it) => ({
+        label: `${it.cantidad} × ${it.nombre}${it.detalle ? ` (${it.detalle})` : ''}`,
+        importe: `$${it.subtotal}`,
+        promo: Boolean(it.promocion)
+      })),
+      telefonoDireccion: `${v.telefono || '2290000000'} · ${v.direccion || 'Domicilio registrado'}`,
+      referencia: v.referencia || ''
+    })
+  }
+}
+
 const pedidos = ref(PEDIDOS_POR_ASIGNAR_MOCK)
 
 const repartidores = computed(() => {
   return empleadosState.value
     .filter((e) => e.rol === 'repartidor' && e.activo)
     .map((e) => ({
+      id: e.id,
       iniciales: e.iniciales,
       nombre: e.nombre,
       subtitulo: e.pedidosEnRuta ? `${e.pedidosEnRuta} pedido en ruta` : 'Sin pedidos en ruta',
@@ -21,8 +46,26 @@ const repartidores = computed(() => {
     }))
 })
 
-const selectedFolio = ref(pedidos.value[0]?.folio || '')
-const selectedRepartidor = ref('Carlos R.')
+const selectedFolio = ref(route.query.folio || pedidos.value[0]?.folio || '')
+const selectedRepartidor = ref('')
+
+watchEffect(() => {
+  if (route.query.folio && pedidos.value.some((p) => p.folio === route.query.folio)) {
+    selectedFolio.value = String(route.query.folio)
+  } else if (!selectedFolio.value || !pedidos.value.some((p) => p.folio === selectedFolio.value)) {
+    selectedFolio.value = pedidos.value[0]?.folio || ''
+  }
+  if (!selectedRepartidor.value && repartidores.value.length > 0) {
+    selectedRepartidor.value = repartidores.value[0].nombre
+  }
+})
+
+const rutaHistorial = computed(() =>
+  route.path.startsWith('/admin') ? '/admin/historial' : '/cajero/historial'
+)
+const rutaInicio = computed(() =>
+  route.path.startsWith('/admin') ? '/admin/inicio' : '/cajero/inicio'
+)
 
 function asignarPedido() {
   const folioActual = selectedFolio.value || pedidos.value[0]?.folio
@@ -32,6 +75,7 @@ function asignarPedido() {
   if (venta) {
     venta.estado = 'Por entregar'
     venta.estadoVariant = ''
+    venta.repartidorAsignado = selectedRepartidor.value
   }
 
   const idx = pedidos.value.findIndex((p) => p.folio === folioActual)
@@ -47,6 +91,7 @@ function asignarPedido() {
       metodoPago: ped.metodoPago || 'Total · Efectivo',
       total: ped.total,
       estado: 'Por entregar',
+      repartidor: selectedRepartidor.value,
       horaEntrega: null,
       lineas: ped.lineas || [],
       envio: ped.envio || '$35'
@@ -54,21 +99,21 @@ function asignarPedido() {
     pedidos.value.splice(idx, 1)
   }
 
+  guardarEntregasStorage()
+  guardarVentasStorage()
+
   fetch('http://localhost:3000/api/entregas/asignar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ folio: folioActual, repartidorId: 3 })
   }).catch(() => {})
 
-  router.push('/cajero/historial')
+  router.push(rutaHistorial.value)
 }
 </script>
 
 <template>
-  <div style="display:flex;flex-direction:column;gap:4px">
-    <h1 style="font-size:22px;font-weight:600">Pedidos a domicilio</h1>
-    <p class="sub">Elige un pedido pendiente y asígnale un repartidor activo.</p>
-  </div>
+  <h1 style="font-size:22px;font-weight:600">Pedidos a domicilio</h1>
 
   <div class="asignar-layout">
     <section class="card asignar-card" style="flex:1;min-width:0">
@@ -119,12 +164,12 @@ function asignarPedido() {
         <a
           v-if="pedidos.length > 0"
           class="btn p"
-          href="/cajero/historial"
+          href="#"
           @click.prevent="asignarPedido"
         >
           Asignar a {{ selectedRepartidor }}
         </a>
-        <RouterLink class="btn s" to="/cajero/inicio">Cancelar</RouterLink>
+        <RouterLink class="btn s" :to="rutaInicio">Cancelar</RouterLink>
       </div>
     </aside>
   </div>

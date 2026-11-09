@@ -11,6 +11,7 @@ const authStore = useAuthStore()
 
 const usuario = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const errorCredenciales = ref('')
 const showRoleModal = ref(false)
 const isSushiPopping = ref(false)
@@ -104,61 +105,130 @@ async function handleSelectRole(roleKey, empleado = null) {
         </div>
         <div style="font-weight:600;font-size:22px">KinGo</div>
       </div>
-      <h1 style="position:relative;font-size:34px;line-height:1.2;font-weight:600;max-width:340px">
-        Cada pedido, en su lugar.
-      </h1>
-      <p style="position:relative;font-size:13px;opacity:0.9;max-width:320px;line-height:1.5">
-        Toca el rollo de sushi para girarlo o inicia sesión con tu cuenta de empleado.
-      </p>
+      <div style="display:flex;flex-direction:column;gap:10px;position:relative">
+        <h1 style="font-size:36px;line-height:1.18;font-weight:600;max-width:360px;letter-spacing:-0.4px">
+          Cada pedido, en su lugar.
+        </h1>
+        <span style="font-size:14px;opacity:0.9;font-weight:500">
+          Kin Sushi · Punto de venta
+        </span>
+      </div>
     </div>
 
     <div class="login-form-panel">
+      <!-- Círculos decorativos sutiles en la esquina superior derecha -->
+      <svg
+        class="login-right-art"
+        width="360"
+        height="360"
+        viewBox="-180 -180 360 360"
+        fill="none"
+        aria-hidden="true"
+      >
+        <circle r="165" stroke="currentColor" stroke-opacity="0.07" stroke-width="1.5" />
+        <circle r="125" stroke="currentColor" stroke-opacity="0.1" stroke-width="1.5" />
+        <circle r="85" stroke="currentColor" stroke-opacity="0.13" stroke-width="1.5" />
+        <circle r="48" fill="currentColor" fill-opacity="0.04" />
+      </svg>
+
       <form
         class="login-form"
-        style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:22px"
         @submit="onSubmitLogin"
       >
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <h2 style="font-size:26px;font-weight:600">Iniciar sesión</h2>
-          <p class="sub">Ingresa tus credenciales o pulsa Entrar para elegir un perfil.</p>
+        <div class="login-header">
+          <h2 class="login-title">Iniciar sesión</h2>
+          <p class="login-subtitle">
+            Ingresa tus credenciales de empleado o elige un perfil activo.
+          </p>
         </div>
-        <BaseInput
-          id="usr"
-          v-model="usuario"
-          label="Usuario"
-          type="text"
-          placeholder="Ej. sofia.caja, carlos.rep o admin"
-        />
-        <BaseInput
-          id="pwd"
-          v-model="password"
-          label="Contraseña"
-          type="password"
-          placeholder="Contraseña (por defecto: 123)"
-        />
+
+        <div class="login-fields">
+          <div class="login-field-group">
+            <label class="lbl" for="usr">Usuario</label>
+            <div class="login-input-wrap">
+              <svg class="login-input-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <input
+                id="usr"
+                v-model="usuario"
+                class="inp login-inp"
+                type="text"
+                placeholder="Ej. cajero, admin o tu usuario"
+              >
+            </div>
+          </div>
+
+          <div class="login-field-group">
+            <label class="lbl" for="pwd">Contraseña</label>
+            <div class="login-input-wrap">
+              <svg class="login-input-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input
+                id="pwd"
+                v-model="password"
+                class="inp login-inp login-inp--pwd"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="••••••••"
+              >
+              <button
+                type="button"
+                class="login-pwd-toggle"
+                :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                :title="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                @click="showPassword = !showPassword"
+              >
+                <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div
           v-if="errorCredenciales"
-          style="padding:10px 14px;border-radius:10px;background:var(--acs);color:var(--act);font-size:13px;font-weight:500"
+          style="padding:12px 16px;border-radius:12px;background:var(--acs);color:var(--act);font-size:13.5px;font-weight:500;border:1px solid var(--ac)"
         >
           {{ errorCredenciales }}
         </div>
-        <BaseButton
-          variant="p"
-          href="02-Principal.html"
-          class="login-submit-btn"
-          style="width:100%"
-          @click.prevent="onSubmitLogin"
-        >
-          Entrar
-        </BaseButton>
-        <button
-          type="button"
-          class="btn s"
-          style="width:100%;font-size:13px"
-          @click="showRoleModal = true"
-        >
-          Acceso rápido por empleado / rol
-        </button>
+
+        <div class="login-actions">
+          <BaseButton
+            variant="p"
+            href="02-Principal.html"
+            class="login-submit-btn"
+            style="width:100%;height:50px;font-size:15px;border-radius:12px"
+            @click.prevent="onSubmitLogin"
+          >
+            Entrar al sistema
+          </BaseButton>
+
+          <div class="login-divider">
+            <span>o acceso rápido</span>
+          </div>
+
+          <button
+            type="button"
+            class="btn s login-quick-btn"
+            @click="showRoleModal = true"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Elegir perfil rápido</span>
+          </button>
+        </div>
       </form>
     </div>
 
@@ -193,7 +263,170 @@ async function handleSelectRole(roleKey, empleado = null) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 48px 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-right-art {
+  position: absolute;
+  top: -110px;
+  right: -110px;
+  color: var(--ac);
+  pointer-events: none;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 470px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--acs);
+  color: var(--act);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.login-kicker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ac);
+}
+
+.login-title {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
+  color: var(--tx);
+}
+
+.login-subtitle {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--tx2);
+}
+
+.login-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.login-field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-ico {
+  position: absolute;
+  left: 15px;
+  z-index: 2;
+  color: var(--tx2);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.login-inp {
+  position: relative;
+  z-index: 1;
+  height: 50px;
+  padding: 0 16px 0 44px !important;
+  border-radius: 12px;
+  font-size: 14.5px;
+  background: var(--sf);
+  border: 1.5px solid var(--bd);
+  box-shadow: 0 2px 6px rgba(31, 26, 23, 0.03);
+}
+
+.login-inp--pwd {
+  padding-right: 46px !important;
+}
+
+.login-pwd-toggle {
+  position: absolute;
+  right: 10px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tx2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.login-pwd-toggle:hover {
+  color: var(--act);
+  background: var(--bg2);
+}
+
+.login-input-wrap:focus-within .login-input-ico {
+  color: var(--ac);
+}
+
+.login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 2px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--tx2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bd);
+}
+
+.login-quick-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 14px;
+  border-radius: 12px;
+  background: var(--sf);
+  border: 1.5px solid var(--bd);
+  box-shadow: 0 2px 6px rgba(31, 26, 23, 0.03);
 }
 
 @media (max-width: 900px) {
@@ -324,7 +557,7 @@ async function handleSelectRole(roleKey, empleado = null) {
 
 /* Animaciones en inputs y botón Entrar del formulario */
 .login-form :deep(.inp) {
-  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.2s ease;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
 .login-form :deep(.inp:hover) {
@@ -335,7 +568,6 @@ async function handleSelectRole(roleKey, empleado = null) {
   outline: none;
   border-color: var(--ac);
   box-shadow: 0 0 0 3px var(--acs);
-  transform: translateY(-1px);
 }
 
 .login-submit-btn {
