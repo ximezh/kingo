@@ -95,18 +95,38 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
   <div v-if="isCajero" class="dash-section">
     <div class="dash-cajero-grid">
       <RouterLink class="dash-cta-banner" to="/cajero/nueva-venta">
-        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-          <div class="dash-cta-icon">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 5v14M5 12h14"></path>
-            </svg>
+        <!-- Círculos decorativos sutiles que atraen la mirada hacia la acción principal -->
+        <svg class="dash-cta-art" width="320" height="220" viewBox="0 0 320 220" fill="none" aria-hidden="true">
+          <circle cx="250" cy="110" r="115" stroke="currentColor" stroke-width="18" />
+          <circle cx="250" cy="110" r="68" stroke="currentColor" stroke-width="10" stroke-dasharray="16 10" />
+          <circle cx="95" cy="195" r="52" stroke="currentColor" stroke-width="10" />
+        </svg>
+
+        <div class="dash-cta-left">
+          <div class="dash-cta-icon-wrap">
+            <span class="dash-cta-halo" aria-hidden="true"></span>
+            <div class="dash-cta-icon">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+            </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:2px">
-            <h2 style="font-size:21px;font-weight:600;letter-spacing:-0.2px">Nueva venta</h2>
-            <p class="sub" style="font-size:13.5px">En local, para llevar o a domicilio</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <h2 class="dash-cta-title">Nueva venta</h2>
+            <div class="dash-cta-modes">
+              <span class="dash-mode-pill">En local</span>
+              <span class="dash-mode-pill">Para llevar</span>
+              <span class="dash-mode-pill">A domicilio</span>
+            </div>
           </div>
         </div>
-        <span class="btn p dash-cta-btn">Empezar venta</span>
+
+        <span class="btn p dash-cta-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+          Empezar venta
+        </span>
       </RouterLink>
 
       <RouterLink class="card dash-action-card" to="/cajero/domicilios">
@@ -402,43 +422,143 @@ const pendientesDomicilio = computed(() => PEDIDOS_POR_ASIGNAR_MOCK.length)
 }
 
 .dash-cta-banner {
+  position: relative;
+  overflow: hidden;
   grid-column: 1 / -1;
-  background: var(--acs);
-  border: 1.5px solid var(--ac);
-  border-radius: 18px;
-  padding: 24px 28px;
+  background: linear-gradient(135deg, var(--acs) 0%, var(--sf) 75%);
+  border: 2.5px solid #F26A1B;
+  border-radius: 22px;
+  padding: 32px 36px;
+  min-height: 152px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
+  flex-wrap: wrap;
   text-decoration: none;
   color: var(--tx);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
+  box-shadow: 0 14px 34px rgba(242, 106, 27, 0.16);
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.24s ease, border-color 0.24s ease;
 }
 
 .dash-cta-banner:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(242, 106, 27, 0.14);
+  transform: translateY(-4px) scale(1.005);
+  border-color: #CF520A;
+  box-shadow: 0 20px 44px rgba(242, 106, 27, 0.26);
+}
+
+.dash-cta-art {
+  position: absolute;
+  right: 140px;
+  top: -30px;
+  color: #F26A1B;
+  opacity: 0.12;
+  pointer-events: none;
+  transition: transform 0.35s ease, opacity 0.25s ease;
+}
+
+.dash-cta-banner:hover .dash-cta-art {
+  transform: scale(1.08) rotate(5deg);
+  opacity: 0.22;
+}
+
+.dash-cta-left {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.dash-cta-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-cta-halo {
+  position: absolute;
+  inset: -6px;
+  border-radius: 24px;
+  background: rgba(242, 106, 27, 0.22);
+  animation: ctaPulseHalo 2.2s ease-in-out infinite;
+}
+
+@keyframes ctaPulseHalo {
+  0%, 100% {
+    transform: scale(0.96);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.95;
+  }
 }
 
 .dash-cta-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--btn);
+  position: relative;
+  z-index: 1;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #CF520A 0%, #F26A1B 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
+  box-shadow: 0 10px 24px rgba(207, 82, 10, 0.34);
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dash-cta-banner:hover .dash-cta-icon {
+  transform: scale(1.08) rotate(6deg);
+}
+
+.dash-cta-title {
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  color: var(--tx);
+}
+
+.dash-cta-modes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dash-mode-pill {
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: var(--sf);
+  border: 1.5px solid var(--bd);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tx2);
 }
 
 .dash-cta-btn {
-  height: 46px;
-  padding: 0 24px;
-  font-size: 14.5px;
-  border-radius: 12px;
+  position: relative;
+  z-index: 1;
+  height: 56px;
+  padding: 0 30px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 16px;
+  gap: 10px;
   flex: none;
+  box-shadow: 0 10px 24px rgba(242, 106, 27, 0.32);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.dash-cta-banner:hover .dash-cta-btn {
+  transform: scale(1.04);
+  box-shadow: 0 14px 30px rgba(242, 106, 27, 0.44);
 }
 
 .dash-action-card {

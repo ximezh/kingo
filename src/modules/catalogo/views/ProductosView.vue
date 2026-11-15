@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { CATEGORIAS_MOCK, PRODUCTOS_MOCK, CATEGORIAS_NOTAS_MAP } from '@/services/catalogo.service'
+import { PROMOCIONES_MOCK } from '@/services/promociones.service'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import StatusTag from '@/components/ui/StatusTag.vue'
+import ProductoVectorArt from '@/components/ui/ProductoVectorArt.vue'
 import ProductoCard from '@/modules/catalogo/components/ProductoCard.vue'
 
 const authStore = useAuthStore()
@@ -15,6 +17,33 @@ const categoriaActiva = ref('Todas')
 const productos = ref(PRODUCTOS_MOCK)
 const showInfoModal = ref(false)
 const productoDetalle = ref(null)
+
+const promocionesComoCatalogo = computed(() =>
+  PROMOCIONES_MOCK.map((pr) => ({
+    id: `promo-${pr.id}`,
+    promoId: pr.id,
+    esPromocion: true,
+    nombre: pr.nombre,
+    categoria: 'Promociones',
+    diaCorto: pr.dia,
+    presentacion: `${pr.dia} · ${pr.vigencia}`,
+    descripcion: `${pr.descuento} · Vigencia: ${pr.dia} (${pr.vigencia}).`,
+    productosIncluidos: pr.productosIncluidos || [],
+    precio: null,
+    precioNulo: true,
+    precioTextoPromo: pr.descuento,
+    imagenUrl: null,
+    esVector: true,
+    tieneFoto: false,
+    activo: pr.activa !== false,
+    editarRuta: `/admin/promociones/editar?id=${pr.id}`
+  }))
+)
+
+const itemsCatalogoCompletos = computed(() => [
+  ...promocionesComoCatalogo.value,
+  ...productos.value
+])
 
 function abrirDetalleProducto(prod) {
   productoDetalle.value = prod
@@ -29,6 +58,7 @@ const notaDetalle = computed(() => {
 const precioDetalle = computed(() => {
   const p = productoDetalle.value
   if (!p) return ''
+  if (p.precioTextoPromo) return p.precioTextoPromo
   if (p.variantes && p.variantes.length > 0) {
     return p.variantes.map((v) => `${v.nombre} $${v.precio}`).join(' / ')
   }
@@ -40,14 +70,15 @@ const precioDetalle = computed(() => {
 
 const productosFiltrados = computed(() => {
   const q = busqueda.value.trim().toLowerCase()
-  return productos.value.filter((p) => {
+  return itemsCatalogoCompletos.value.filter((p) => {
     if (categoriaActiva.value !== 'Todas' && p.categoria !== categoriaActiva.value) {
       return false
     }
     if (q) {
       return (
         p.nombre.toLowerCase().includes(q) ||
-        (p.categoria && p.categoria.toLowerCase().includes(q))
+        (p.categoria && p.categoria.toLowerCase().includes(q)) ||
+        (p.descripcion && p.descripcion.toLowerCase().includes(q))
       )
     }
     return true
@@ -79,10 +110,17 @@ function limpiarFiltros() {
           v-model="busqueda"
           class="inp search-inp"
           type="search"
-          placeholder="Buscar platillo..."
+          placeholder="Buscar platillo o ingrediente..."
         >
       </div>
-      <BaseButton v-if="isAdmin" variant="p" to="/admin/productos/nuevo">
+      <BaseButton
+        v-if="isAdmin && categoriaActiva === 'Promociones'"
+        variant="p"
+        to="/admin/promociones/nueva"
+      >
+        + Nueva promoción
+      </BaseButton>
+      <BaseButton v-else-if="isAdmin" variant="p" to="/admin/productos/nuevo">
         + Nuevo producto
       </BaseButton>
     </div>
@@ -127,11 +165,21 @@ function limpiarFiltros() {
   <BaseModal
     v-model="showInfoModal"
     aria-label="Descripción del platillo"
-    width="380px"
+    width="390px"
   >
     <template v-if="productoDetalle">
-      <div v-if="productoDetalle.imagenUrl" class="info-modal-photo">
-        <img :src="productoDetalle.imagenUrl" :alt="productoDetalle.nombre">
+      <div class="info-modal-photo">
+        <img
+          v-if="productoDetalle.imagenUrl"
+          :src="productoDetalle.imagenUrl"
+          :alt="productoDetalle.nombre"
+        >
+        <ProductoVectorArt
+          v-else
+          :nombre="productoDetalle.nombre"
+          :categoria="productoDetalle.categoria"
+          :subtitulo="productoDetalle.esPromocion ? (productoDetalle.precioTextoPromo || productoDetalle.nombre) : (productoDetalle.descripcion || '')"
+        />
       </div>
 
       <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
@@ -142,21 +190,47 @@ function limpiarFiltros() {
           </div>
           <h2 style="font-size:18px;font-weight:600;line-height:1.25">{{ productoDetalle.nombre }}</h2>
         </div>
-        <span style="font-size:17px;font-weight:600;color:var(--act);white-space:nowrap">{{ precioDetalle }}</span>
+        <span style="font-size:15px;font-weight:600;color:var(--act);white-space:nowrap">{{ precioDetalle }}</span>
       </div>
 
       <div class="info-desc-box">
-        <span class="info-desc-label">Ingredientes / Qué incluye</span>
+        <div class="row" style="justify-content:space-between">
+          <span class="info-desc-label">
+            {{ productoDetalle.esPromocion ? 'Condiciones de la promoción' : 'Ingredientes / Descripción' }}
+          </span>
+          <span
+            v-if="productoDetalle.descripcion && productoDetalle.descripcion.includes('D:')"
+            class="sub"
+            style="font-size:11px;font-weight:600;color:var(--act)"
+          >
+            D: Dentro · A: Afuera
+          </span>
+        </div>
         <p style="font-size:14px;line-height:1.5;color:var(--tx)">
           {{ productoDetalle.descripcion || 'Sin descripción adicional registrada para este platillo.' }}
         </p>
+        <div
+          v-if="productoDetalle.esPromocion && Array.isArray(productoDetalle.productosIncluidos) && productoDetalle.productosIncluidos.length > 0"
+          style="display:flex;flex-direction:column;gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid var(--bd)"
+        >
+          <span class="info-desc-label">Platillos participantes ({{ productoDetalle.productosIncluidos.length }})</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px">
+            <StatusTag
+              v-for="plat in productoDetalle.productosIncluidos"
+              :key="plat"
+              style="height:24px;font-size:11.5px"
+            >
+              {{ plat }}
+            </StatusTag>
+          </div>
+        </div>
       </div>
 
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:2px">
         <BaseButton
           v-if="isAdmin"
           variant="s"
-          :to="`/admin/productos/editar?id=${productoDetalle.id}`"
+          :to="productoDetalle.editarRuta || `/admin/productos/editar?id=${productoDetalle.id}`"
           @click="showInfoModal = false"
         >
           Editar
@@ -189,7 +263,7 @@ function limpiarFiltros() {
 
 .catalogo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
   gap: 16px;
 }
 
@@ -211,7 +285,7 @@ function limpiarFiltros() {
 .info-desc-box {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--bg2);

@@ -72,10 +72,15 @@ function confirmarYRegistrarVenta() {
 
   const cambioCalculado = cartStore.metodoPago === 'Efectivo' ? cambioDevolver.value : 0
   const metodoUsado = cartStore.metodoPago
-  const resultado = cartStore.registrarVentaActual()
+  const recibidoNum = cartStore.metodoPago === 'Efectivo' ? montoRecibidoNum.value : cartStore.total
+  const resultado = cartStore.registrarVentaActual({
+    montoRecibido: recibidoNum,
+    cambio: cambioCalculado
+  })
   ventaConfirmada.value = {
     ...resultado,
     pago: metodoUsado,
+    montoRecibido: recibidoNum,
     cambio: cambioCalculado
   }
   showVentaRegistradaModal.value = true
@@ -268,14 +273,11 @@ function irAlHistorial() {
       </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
-      <BaseButton variant="p" href="#" @click.prevent="irANuevaVenta">
-        + Registrar nueva venta
-      </BaseButton>
-      <div class="row" style="gap:8px">
+    <div class="venta-modal-actions">
+      <div class="venta-primary-row">
         <BaseButton
           v-if="ventaConfirmada?.tipoCodigo === 'domicilio'"
-          variant="s"
+          variant="p"
           href="#"
           style="flex:1"
           @click.prevent="irAAsignarRepartidor"
@@ -283,13 +285,33 @@ function irAlHistorial() {
           Asignar repartidor
         </BaseButton>
         <BaseButton
-          variant="s"
+          v-else
+          variant="p"
           href="#"
           style="flex:1"
+          @click.prevent="irANuevaVenta"
+        >
+          + Nueva venta
+        </BaseButton>
+      </div>
+
+      <div class="venta-secondary-links">
+        <a
+          v-if="ventaConfirmada?.tipoCodigo === 'domicilio'"
+          href="#"
+          class="venta-subtle-link"
+          @click.prevent="irANuevaVenta"
+        >
+          Registrar otra venta
+        </a>
+        <span v-if="ventaConfirmada?.tipoCodigo === 'domicilio'" class="sub">·</span>
+        <a
+          href="#"
+          class="venta-subtle-link"
           @click.prevent="irAlHistorial"
         >
-          Ver historial de ventas
-        </BaseButton>
+          Ir al historial de ventas
+        </a>
       </div>
     </div>
   </BaseModal>
@@ -403,5 +425,39 @@ function irAlHistorial() {
   background: var(--bg2);
   border: 1px solid var(--bd);
   font-size: 13px;
+}
+
+.venta-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.venta-primary-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.venta-secondary-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.venta-subtle-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx2);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.venta-subtle-link:hover {
+  color: var(--act);
+  text-decoration: underline;
 }
 </style>

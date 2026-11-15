@@ -2,8 +2,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import BaseInput from '@/components/ui/BaseInput.vue'
-import BaseButton from '@/components/ui/BaseButton.vue'
 import RoleSelectorModal from '@/modules/auth/components/RoleSelectorModal.vue'
 
 const router = useRouter()
@@ -29,10 +27,13 @@ function triggerLogoPop() {
   requestAnimationFrame(() => {
     isLogoPopping.value = true
   })
+  window.dispatchEvent(new Event('kingo:replay-intro'))
 }
 
 async function onSubmitLogin(e) {
-  e.preventDefault()
+  if (e && typeof e.preventDefault === 'function') {
+    e.preventDefault()
+  }
   errorCredenciales.value = ''
 
   if (usuario.value.trim()) {
@@ -41,7 +42,7 @@ async function onSubmitLogin(e) {
       router.push(profile.homePath)
       return
     }
-    errorCredenciales.value = 'Usuario o contraseña incorrectos, o cuenta dada de baja.'
+    errorCredenciales.value = 'Usuario o contraseña incorrectos'
     return
   }
 
@@ -65,7 +66,6 @@ async function handleSelectRole(roleKey, empleado = null) {
         height="620"
         viewBox="-310 -310 620 620"
         fill="none"
-        style="position:absolute;right:-190px;bottom:-190px"
         :class="['sushi-roll', { 'is-popping': isSushiPopping }]"
         aria-hidden="true"
         @click="triggerSushiPop"
@@ -91,6 +91,7 @@ async function handleSelectRole(roleKey, empleado = null) {
           <circle r="9" fill="#F26A1B" />
         </g>
       </svg>
+
       <div
         class="row login-brand"
         style="position:relative"
@@ -105,12 +106,13 @@ async function handleSelectRole(roleKey, empleado = null) {
         </div>
         <div style="font-weight:600;font-size:22px">KinGo</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px;position:relative">
-        <h1 style="font-size:36px;line-height:1.18;font-weight:600;max-width:360px;letter-spacing:-0.4px">
+
+      <div class="login-hero-copy">
+        <h1 class="login-hero-title">
           Cada pedido, en su lugar.
         </h1>
-        <span style="font-size:14px;opacity:0.9;font-weight:500">
-          Kin Sushi · Punto de venta
+        <span class="login-hero-sub">
+          Kin Sushi · Punto de venta y entregas
         </span>
       </div>
     </div>
@@ -133,7 +135,7 @@ async function handleSelectRole(roleKey, empleado = null) {
 
       <form
         class="login-form"
-        @submit="onSubmitLogin"
+        @submit.prevent="onSubmitLogin"
       >
         <div class="login-header">
           <h2 class="login-title">Iniciar sesión</h2>
@@ -155,7 +157,9 @@ async function handleSelectRole(roleKey, empleado = null) {
                 v-model="usuario"
                 class="inp login-inp"
                 type="text"
-                placeholder="Ej. cajero, admin o tu usuario"
+                autocomplete="username"
+                placeholder="Ej. cajero, admin o repartidor"
+                @keydown.enter.prevent="onSubmitLogin"
               >
             </div>
           </div>
@@ -172,7 +176,9 @@ async function handleSelectRole(roleKey, empleado = null) {
                 v-model="password"
                 class="inp login-inp login-inp--pwd"
                 :type="showPassword ? 'text' : 'password'"
+                autocomplete="current-password"
                 placeholder="••••••••"
+                @keydown.enter.prevent="onSubmitLogin"
               >
               <button
                 type="button"
@@ -202,15 +208,12 @@ async function handleSelectRole(roleKey, empleado = null) {
         </div>
 
         <div class="login-actions">
-          <BaseButton
-            variant="p"
-            href="02-Principal.html"
-            class="login-submit-btn"
-            style="width:100%;height:50px;font-size:15px;border-radius:12px"
-            @click.prevent="onSubmitLogin"
+          <button
+            type="submit"
+            class="btn p login-submit-btn"
           >
             Entrar al sistema
-          </BaseButton>
+          </button>
 
           <div class="login-divider">
             <span>o acceso rápido</span>
@@ -248,7 +251,7 @@ async function handleSelectRole(roleKey, empleado = null) {
 .login-hero {
   width: 460px;
   flex: none;
-  background: #F26A1B;
+  background: linear-gradient(155deg, #CF520A 0%, #F26A1B 100%);
   padding: 48px;
   position: relative;
   overflow: hidden;
@@ -256,6 +259,36 @@ async function handleSelectRole(roleKey, empleado = null) {
   flex-direction: column;
   gap: 32px;
   color: #fff;
+}
+
+.sushi-roll {
+  position: absolute;
+  right: -190px;
+  bottom: -190px;
+  cursor: pointer;
+  transform-origin: center center;
+}
+
+.login-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-hero-title {
+  font-size: 36px;
+  line-height: 1.18;
+  font-weight: 600;
+  max-width: 360px;
+  letter-spacing: -0.4px;
+}
+
+.login-hero-sub {
+  font-size: 14px;
+  opacity: 0.92;
+  font-weight: 500;
 }
 
 .login-form-panel {
@@ -281,7 +314,7 @@ async function handleSelectRole(roleKey, empleado = null) {
   max-width: 470px;
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: 24px;
   position: relative;
   z-index: 1;
 }
@@ -290,27 +323,6 @@ async function handleSelectRole(roleKey, empleado = null) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.login-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--acs);
-  color: var(--act);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-}
-
-.login-kicker-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ac);
 }
 
 .login-title {
@@ -429,24 +441,78 @@ async function handleSelectRole(roleKey, empleado = null) {
   box-shadow: 0 2px 6px rgba(31, 26, 23, 0.03);
 }
 
+.login-submit-btn {
+  width: 100%;
+  height: 50px;
+  font-size: 15px;
+  border-radius: 12px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, background-color 0.2s ease;
+}
+
 @media (max-width: 900px) {
   .login-view {
     flex-direction: column;
   }
   .login-hero {
     width: 100%;
-    min-height: 240px;
-    padding: 32px 24px;
+    min-height: 210px;
+    padding: 28px 24px;
     gap: 16px;
+  }
+  .sushi-roll {
+    width: 420px;
+    height: 420px;
+    right: -135px;
+    bottom: -145px;
+  }
+}
+
+/* Versión móvil simplificada y compacta para celular (ideal para Repartidor) */
+@media (max-width: 600px) {
+  .login-hero {
+    min-height: auto;
+    padding: 20px 20px 22px;
+    gap: 10px;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    box-shadow: 0 8px 24px rgba(201, 76, 8, 0.18);
+  }
+  .sushi-roll {
+    width: 240px;
+    height: 240px;
+    right: -75px;
+    bottom: -85px;
+  }
+  .login-hero-title {
+    font-size: 22px;
+    max-width: 240px;
+  }
+  .login-hero-sub {
+    font-size: 12.5px;
+  }
+  .login-form-panel {
+    padding: 26px 20px 32px;
+    align-items: flex-start;
+  }
+  .login-form {
+    gap: 18px;
+  }
+  .login-title {
+    font-size: 26px;
+  }
+  .login-subtitle {
+    font-size: 13.5px;
+  }
+  .login-fields {
+    gap: 14px;
+  }
+  .login-inp {
+    height: 48px;
+    font-size: 14px;
   }
 }
 
 /* Animación e interactividad del rollo de sushi */
-.sushi-roll {
-  cursor: pointer;
-  transform-origin: center center;
-}
-
 .sushi-core {
   transform-origin: 0px 0px;
   transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -525,6 +591,7 @@ async function handleSelectRole(roleKey, empleado = null) {
 .login-brand {
   cursor: pointer;
   width: fit-content;
+  z-index: 1;
 }
 
 .login-logo-badge {
@@ -568,10 +635,6 @@ async function handleSelectRole(roleKey, empleado = null) {
   outline: none;
   border-color: var(--ac);
   box-shadow: 0 0 0 3px var(--acs);
-}
-
-.login-submit-btn {
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, background-color 0.2s ease;
 }
 
 .login-submit-btn:hover {

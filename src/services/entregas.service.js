@@ -1,7 +1,28 @@
 import { ref, reactive } from 'vue'
+import { HISTORIAL_VENTAS_MOCK } from '@/services/ventas.service'
 
 const STORAGE_POR_ASIGNAR_KEY = 'kingo_pedidos_por_asignar_v2'
 const STORAGE_REPARTIDOR_KEY = 'kingo_pedidos_repartidor_v2'
+
+function normalizarPedidosRepartidor(lista) {
+  if (!Array.isArray(lista)) return []
+  return lista.map((p) => {
+    const venta = HISTORIAL_VENTAS_MOCK.find((v) => v.folio === p.folio)
+    // Si la venta en el historial ya está Completada, Entregado, No entregado o es semilla histórica, no debe seguir "Por entregar"
+    if (
+      p.estado === 'Por entregar' &&
+      (!venta ||
+        venta.esSemillaHistorica ||
+        ['Completada', 'Entregado', 'No entregado'].includes(venta.estado))
+    ) {
+      return {
+        ...p,
+        estado: venta?.estado === 'No entregado' ? 'No entregado' : 'Entregado'
+      }
+    }
+    return p
+  })
+}
 
 function cargarPorAsignar() {
   try {
@@ -21,7 +42,7 @@ function cargarRepartidorPedidos() {
     const saved = localStorage.getItem(STORAGE_REPARTIDOR_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed)) return parsed
+      if (Array.isArray(parsed)) return normalizarPedidosRepartidor(parsed)
     }
   } catch {
     // ignore
@@ -31,6 +52,11 @@ function cargarRepartidorPedidos() {
 
 export const PEDIDOS_POR_ASIGNAR_MOCK = reactive(cargarPorAsignar())
 export const pedidosRepartidorState = ref(cargarRepartidorPedidos())
+
+export function depurarEstadoEntregas() {
+  pedidosRepartidorState.value = normalizarPedidosRepartidor(pedidosRepartidorState.value)
+  guardarEntregasStorage()
+}
 
 export function guardarEntregasStorage() {
   try {
@@ -72,7 +98,9 @@ export async function sincronizarEntregasDesdeDB() {
             envio: p.envio
           }))
         PEDIDOS_POR_ASIGNAR_MOCK.splice(0, PEDIDOS_POR_ASIGNAR_MOCK.length, ...porAsignar)
-        pedidosRepartidorState.value = lista.filter((p) => p.estado !== 'Por asignar')
+        pedidosRepartidorState.value = normalizarPedidosRepartidor(
+          lista.filter((p) => p.estado !== 'Por asignar')
+        )
         guardarEntregasStorage()
       }
     }

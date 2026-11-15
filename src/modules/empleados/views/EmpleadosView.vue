@@ -1,14 +1,14 @@
 <script setup>
 import { ref, computed } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import StatusTag from '@/components/ui/StatusTag.vue'
 import {
   empleadosState,
   agregarEmpleado,
   actualizarEmpleado,
-  toggleEstadoEmpleado
+  toggleEstadoEmpleado,
+  validarFormularioEmpleado
 } from '@/services/empleados.service'
 
 const busqueda = ref('')
@@ -19,6 +19,8 @@ const mostrarPasswords = ref({})
 const showModal = ref(false)
 const editandoId = ref(null)
 const errorForm = ref('')
+const erroresCampos = ref({})
+const mensajeExito = ref('')
 
 const form = ref({
   nombre: '',
@@ -59,6 +61,7 @@ function toggleVerPassword(id) {
 function abrirModalNuevo() {
   editandoId.value = null
   errorForm.value = ''
+  erroresCampos.value = {}
   form.value = {
     nombre: '',
     rol: 'cajero',
@@ -74,59 +77,80 @@ function abrirModalNuevo() {
 function abrirModalEditar(emp) {
   editandoId.value = emp.id
   errorForm.value = ''
+  erroresCampos.value = {}
   form.value = {
     nombre: emp.nombre,
     rol: emp.rol,
     usuario: emp.usuario,
     password: emp.password,
-    telefono: emp.telefono,
+    telefono: String(emp.telefono || '').replace(/\D/g, '').slice(0, 10),
     turno: emp.turno,
     activo: emp.activo
   }
   showModal.value = true
 }
 
-function guardarEmpleado() {
+function onNombreInput(e) {
+  const limpio = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ.\s]/g, '')
+  e.target.value = limpio
+  form.value.nombre = limpio
+  erroresCampos.value.nombre = ''
   errorForm.value = ''
-  if (!form.value.nombre.trim() || form.value.nombre.trim().length < 3) {
-    errorForm.value = 'Ingresa el nombre completo del empleado (mínimo 3 letras).'
-    return
-  }
-  if (!form.value.usuario.trim() || form.value.usuario.trim().length < 3) {
-    errorForm.value = 'Ingresa un nombre de usuario válido (mínimo 3 caracteres).'
-    return
-  }
-  const duplicado = empleadosState.value.find(
-    (e) => e.id !== editandoId.value && e.usuario.toLowerCase() === form.value.usuario.trim().toLowerCase()
-  )
-  if (duplicado) {
-    errorForm.value = 'Ese nombre de usuario ya está registrado por otro empleado.'
-    return
-  }
-  if (!form.value.password.trim() || form.value.password.trim().length < 3) {
-    errorForm.value = 'La contraseña debe tener al menos 3 caracteres.'
-    return
-  }
-  const digitosTel = form.value.telefono.replace(/\D/g, '')
-  if (digitosTel.length !== 10) {
-    errorForm.value = 'El teléfono celular debe contener exactamente 10 dígitos.'
+}
+
+function onUsuarioInput(e) {
+  const limpio = e.target.value.replace(/\s+/g, '').replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase()
+  e.target.value = limpio
+  form.value.usuario = limpio
+  erroresCampos.value.usuario = ''
+  errorForm.value = ''
+}
+
+function onPasswordInput() {
+  erroresCampos.value.password = ''
+  errorForm.value = ''
+}
+
+function onTelefonoInput(e) {
+  const soloDigitos = e.target.value.replace(/\D/g, '').slice(0, 10)
+  e.target.value = soloDigitos
+  form.value.telefono = soloDigitos
+  erroresCampos.value.telefono = ''
+  errorForm.value = ''
+}
+
+const hayErrores = computed(() => Object.values(erroresCampos.value).some(Boolean))
+
+async function guardarEmpleado() {
+  errorForm.value = ''
+  const resultado = validarFormularioEmpleado(form.value, editandoId.value)
+  erroresCampos.value = resultado.errores
+
+  if (!resultado.valido) {
+    errorForm.value = 'Completa los campos marcados antes de continuar.'
     return
   }
 
+  const digitosTel = form.value.telefono.replace(/\D/g, '')
   const telFormateado = `${digitosTel.slice(0, 3)} ${digitosTel.slice(3, 6)} ${digitosTel.slice(6, 10)}`
 
   if (editandoId.value) {
-    actualizarEmpleado(editandoId.value, {
+    await actualizarEmpleado(editandoId.value, {
       ...form.value,
       telefono: telFormateado
     })
+    mensajeExito.value = `Datos de "${form.value.nombre.trim()}" validados y actualizados en base de datos.`
   } else {
-    agregarEmpleado({
+    await agregarEmpleado({
       ...form.value,
       telefono: telFormateado
     })
+    mensajeExito.value = `Usuario "${form.value.usuario.trim()}" validado y registrado en base de datos.`
   }
   showModal.value = false
+  setTimeout(() => {
+    mensajeExito.value = ''
+  }, 3500)
 }
 </script>
 
@@ -138,18 +162,49 @@ function guardarEmpleado() {
     </BaseButton>
   </div>
 
+  <div v-if="mensajeExito" class="note" style="background:var(--oks);color:var(--ok)">
+    ✓ {{ mensajeExito }}
+  </div>
+
   <div class="emp-kpi-grid">
-    <div class="emp-kpi">
-      <span class="sub">Personal activo</span>
-      <b>{{ totalActivos }}</b>
+    <div class="emp-kpi emp-kpi-active">
+      <div style="display:flex;flex-direction:column;gap:4px;position:relative;z-index:1">
+        <span class="emp-kpi-active-lbl">Personal activo</span>
+        <b>{{ totalActivos }}</b>
+      </div>
+      <div class="emp-kpi-active-ico" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
     </div>
     <div class="emp-kpi">
-      <span class="sub">Cajeros</span>
-      <b>{{ totalCajeros }}</b>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span class="sub">Cajeros</span>
+        <b>{{ totalCajeros }}</b>
+      </div>
+      <div class="emp-kpi-soft-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <line x1="6" y1="12" x2="18" y2="12"></line>
+        </svg>
+      </div>
     </div>
     <div class="emp-kpi">
-      <span class="sub">Repartidores</span>
-      <b>{{ totalRepartidores }}</b>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span class="sub">Repartidores</span>
+        <b>{{ totalRepartidores }}</b>
+      </div>
+      <div class="emp-kpi-soft-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="5.5" cy="17.5" r="3.5"></circle>
+          <circle cx="18.5" cy="17.5" r="3.5"></circle>
+          <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
+        </svg>
+      </div>
     </div>
   </div>
 
@@ -266,12 +321,19 @@ function guardarEmpleado() {
     </h2>
 
     <div style="display:flex;flex-direction:column;gap:14px">
-      <BaseInput
-        id="emp-nom"
-        v-model="form.nombre"
-        label="Nombre completo *"
-        placeholder="Ej. Sofía Ramírez"
-      />
+      <div>
+        <label class="lbl" for="emp-nom">Nombre completo *</label>
+        <input
+          id="emp-nom"
+          v-model="form.nombre"
+          class="inp"
+          type="text"
+          placeholder="Ej. Sofía Ramírez"
+          :style="erroresCampos.nombre ? 'border-color:#C94C08' : ''"
+          @input="onNombreInput"
+        >
+        <span v-if="erroresCampos.nombre" class="field-err">{{ erroresCampos.nombre }}</span>
+      </div>
 
       <div>
         <span class="lbl">Rol *</span>
@@ -283,28 +345,58 @@ function guardarEmpleado() {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px">
-        <BaseInput
-          id="emp-usr"
-          v-model="form.usuario"
-          label="Usuario *"
-          placeholder="Ej. sofia.caja"
-        />
-        <BaseInput
-          id="emp-pwd"
-          v-model="form.password"
-          label="Contraseña *"
-          type="text"
-          placeholder="Mínimo 3 caracteres"
-        />
+        <div>
+          <label class="lbl" for="emp-usr">Usuario (único, sin espacios) *</label>
+          <input
+            id="emp-usr"
+            v-model="form.usuario"
+            class="inp"
+            type="text"
+            placeholder="Ej. sofia.caja"
+            :style="erroresCampos.usuario ? 'border-color:#C94C08' : ''"
+            @input="onUsuarioInput"
+          >
+          <span v-if="erroresCampos.usuario" class="field-err">{{ erroresCampos.usuario }}</span>
+        </div>
+        <div>
+          <label class="lbl" for="emp-pwd">Contraseña *</label>
+          <input
+            id="emp-pwd"
+            v-model="form.password"
+            class="inp"
+            type="text"
+            placeholder="Mínimo 3 caracteres"
+            :style="erroresCampos.password ? 'border-color:#C94C08' : ''"
+            @input="onPasswordInput"
+          >
+          <span v-if="erroresCampos.password" class="field-err">{{ erroresCampos.password }}</span>
+        </div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px">
-        <BaseInput
-          id="emp-tel"
-          v-model="form.telefono"
-          label="Teléfono (10 dígitos) *"
-          placeholder="Ej. 2292458810"
-        />
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:6px">
+            <label class="lbl" for="emp-tel" style="margin:0">Teléfono (10 dígitos) *</label>
+            <span
+              style="font-size:11px;font-weight:600"
+              :style="{ color: form.telefono.length === 10 ? 'var(--ok)' : 'var(--tx2)' }"
+            >
+              {{ form.telefono.length }}/10
+            </span>
+          </div>
+          <input
+            id="emp-tel"
+            :value="form.telefono"
+            class="inp"
+            type="tel"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="Ej. 2292458810"
+            :style="erroresCampos.telefono ? 'border-color:#C94C08' : ''"
+            @input="onTelefonoInput"
+          >
+          <span v-if="erroresCampos.telefono" class="field-err">{{ erroresCampos.telefono }}</span>
+        </div>
         <div>
           <label class="lbl" for="emp-turno">Turno</label>
           <select id="emp-turno" v-model="form.turno" class="inp">
@@ -324,11 +416,8 @@ function guardarEmpleado() {
         Cuenta activa
       </label>
 
-      <div
-        v-if="errorForm"
-        style="padding:10px 14px;border-radius:10px;background:var(--acs);color:var(--act);font-size:13px;font-weight:500"
-      >
-        {{ errorForm }}
+      <div v-if="hayErrores || errorForm" class="note">
+        {{ errorForm || 'Completa los campos marcados antes de continuar.' }}
       </div>
     </div>
 
@@ -349,19 +438,92 @@ function guardarEmpleado() {
 }
 
 .emp-kpi {
-  background: var(--bg2);
-  border: 1px solid var(--bd);
+  background: var(--sf);
+  border: 1.5px solid var(--bd);
   border-radius: 14px;
   padding: 16px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(31, 26, 23, 0.04);
 }
 
 .emp-kpi b {
   font-size: 26px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--tx);
+  line-height: 1.1;
+}
+
+.emp-kpi-active {
+  background: linear-gradient(135deg, #CF520A 0%, #F26A1B 68%, #FA8237 100%);
+  border-color: #CF520A;
+  color: #FFFFFF;
+  box-shadow: 0 8px 20px rgba(242, 106, 27, 0.24);
+}
+
+.emp-kpi-active::before {
+  content: '';
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  right: -24px;
+  top: -32px;
+  pointer-events: none;
+}
+
+.emp-kpi-active::after {
+  content: '';
+  position: absolute;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  right: 36px;
+  bottom: -28px;
+  pointer-events: none;
+}
+
+.emp-kpi-active-lbl {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.emp-kpi-active b {
+  color: #FFFFFF;
+}
+
+.emp-kpi-active-ico {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emp-kpi-soft-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--acs);
+  color: var(--act);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .emp-th,
@@ -414,5 +576,13 @@ function guardarEmpleado() {
   align-items: center;
   justify-content: center;
   flex: none;
+}
+
+.field-err {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #C94C08;
 }
 </style>

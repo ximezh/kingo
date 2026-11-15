@@ -26,10 +26,7 @@ import EmpleadosView from '@/modules/empleados/views/EmpleadosView.vue'
 const routes = [
   {
     path: '/',
-    redirect: () => {
-      const authStore = useAuthStore()
-      return authStore.isAuthenticated ? authStore.homePath : '/login'
-    }
+    redirect: '/login'
   },
   {
     path: '/login',

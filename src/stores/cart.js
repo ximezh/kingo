@@ -1,7 +1,13 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
+import {
+  HISTORIAL_VENTAS_MOCK,
+  guardarVentasStorage,
+  obtenerFechaISOLocal,
+  formatearFechaHoraVenta
+} from '@/services/ventas.service'
 import { PEDIDOS_POR_ASIGNAR_MOCK, guardarEntregasStorage } from '@/services/entregas.service'
+import { useAuthStore } from '@/stores/auth'
 
 export const TIPO_PEDIDO_INFO = {
   local: {
@@ -44,9 +50,27 @@ export const useCartStore = defineStore('cart', () => {
 
   // Paso 4: Método de pago ('Efectivo' | 'Transferencia' | 'Tarjeta')
   const metodoPago = ref('Efectivo')
+  const ultimaVentaRegistrada = ref(null)
 
   const tipoEtiqueta = computed(() => TIPO_PEDIDO_INFO[tipoPedido.value]?.etiqueta || 'A domicilio')
   const tituloDatos = computed(() => TIPO_PEDIDO_INFO[tipoPedido.value]?.tituloDatos || 'Datos de entrega')
+
+  const subtotalSinPostreGratis = computed(() =>
+    items.value.reduce((acc, item) => {
+      if (item.esPostreGratisPromo) return acc
+      return acc + item.subtotal - (item.promocion?.descuento || 0)
+    }, 0)
+  )
+
+  const tienePostreGratisEnCarrito = computed(() =>
+    items.value.some((item) => item.esPostreGratisPromo)
+  )
+
+  function revalidarPromocionesCondicionadas() {
+    if (tienePostreGratisEnCarrito.value && subtotalSinPostreGratis.value < 400) {
+      items.value = items.value.filter((i) => !i.esPostreGratisPromo)
+    }
+  }
 
   const subtotal = computed(() =>
     items.value.reduce((acc, item) => acc + item.subtotal, 0)
@@ -85,6 +109,7 @@ export const useCartStore = defineStore('cart', () => {
     const nueva = item.cantidad + delta
     if (nueva <= 0) {
       items.value.splice(idx, 1)
+      revalidarPromocionesCondicionadas()
       return
     }
     const factor = nueva / item.cantidad
@@ -100,10 +125,12 @@ export const useCartStore = defineStore('cart', () => {
         item.promocion.descuento = Math.round(item.promocion.descuento * factor)
       }
     }
+    revalidarPromocionesCondicionadas()
   }
 
   function eliminarItem(itemId) {
     items.value = items.value.filter((i) => i.id !== itemId)
+    revalidarPromocionesCondicionadas()
   }
 
   function vaciarCarrito() {
@@ -167,6 +194,41 @@ export const useCartStore = defineStore('cart', () => {
         descuento: descuentoMenor
       }
     })
+  }
+
+  function agregarPromoGeneralAlCarrito(promoData, platilloElegido) {
+    if (!promoData || !platilloElegido) return
+    const esPostreGratis =
+      (promoData.nombre || '').toLowerCase().includes('postre') ||
+      (promoData.descuento || '').toLowerCase().includes('gratis')
+
+    if (esPostreGratis) {
+      if (subtotalSinPostreGratis.value < 400 || tienePostreGratisEnCarrito.value) {
+        return false
+      }
+    }
+
+    const precioNormal = Math.max(0, Number(platilloElegido.precioOriginal) || 0)
+    const descuentoMonto = Math.max(0, Math.min(precioNormal, Number(platilloElegido.descuentoMonto) || 0))
+
+    items.value.push({
+      id: Date.now() + Math.random(),
+      nombre: `${platilloElegido.nombre} (${promoData.nombre})`,
+      etiquetaPromo: platilloElegido.etiquetaCorto || 'Promo',
+      detalle: `${promoData.descuento} · Precio normal $${precioNormal}`,
+      extrasSeleccionados: [],
+      esPostreGratisPromo: esPostreGratis,
+      cantidad: 1,
+      precioBase: precioNormal,
+      precioUnitario: precioNormal,
+      subtotal: precioNormal,
+      descuentoUnitarioPromo: descuentoMonto,
+      promocion: {
+        nombre: promoData.nombre,
+        descuento: descuentoMonto
+      }
+    })
+    return true
   }
 
   function agregarProducto(prod, opciones = {}) {
@@ -310,7 +372,8 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  function registrarVentaActual() {
+  function registrarVentaActual(datosPagoExtra = {}) {
+    const authStore = useAuthStore()
     const mapTipo = {
       local: 'En local',
       llevar: 'Para llevar',
@@ -325,7 +388,14 @@ export const useCartStore = defineStore('cart', () => {
 
     const nuevoFolioNum = HISTORIAL_VENTAS_MOCK.length + 1
     const folioNuevo = `#${String(nuevoFolioNum).padStart(4, '0')}`
-    const horaStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
+    const ahora = new Date()
+    const fechaISO = obtenerFechaISOLocal(ahora)
+    const horaStr = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
+    const cajeroAtendio =
+      datosPagoExtra.atendio ||
+      authStore.user?.fullName ||
+      authStore.userName ||
+      'Sofía Ramírez'
 
     const lineasPedido = items.value.map((it) => ({
       label: `${it.cantidad} × ${it.nombre}${it.detalle ? ` (${it.detalle})` : ''}`,
@@ -335,25 +405,40 @@ export const useCartStore = defineStore('cart', () => {
 
     const nuevaVenta = {
       folio: folioNuevo,
-      fechaHora: `Hoy, ${horaStr}`,
+      fechaISO,
+      hora: horaStr,
+      fechaHora: formatearFechaHoraVenta(fechaISO, horaStr),
       tipo: mapTipo[tipoPedido.value],
       tipoCodigo: tipoPedido.value,
       clienteMesa,
+      mesa: tipoPedido.value === 'local' ? datosCliente.value.mesa : null,
+      horaRecoleccion: tipoPedido.value === 'llevar' ? datosCliente.value.horaRecoleccion : null,
+      notaCocina: datosCliente.value.notaCocina || '',
       telefono: datosCliente.value.telefono,
       direccion: datosCliente.value.direccion,
       referencia: datosCliente.value.referencia,
+      atendio: cajeroAtendio,
       pago: metodoPago.value,
       subtotal: subtotal.value,
       descuento: descuento.value,
       envio: envio.value,
       totalNum: total.value,
       total: `$${total.value}`,
+      montoRecibido:
+        metodoPago.value === 'Efectivo'
+          ? Number(datosPagoExtra.montoRecibido) || total.value
+          : total.value,
+      cambio:
+        metodoPago.value === 'Efectivo'
+          ? Math.max(0, (Number(datosPagoExtra.montoRecibido) || total.value) - total.value)
+          : 0,
       cantidadProductos: items.value.reduce((acc, it) => acc + it.cantidad, 0),
       itemsSnapshot: items.value.map((it) => ({ ...it })),
       estado: tipoPedido.value === 'domicilio' ? 'Por asignar' : 'Completada',
       estadoVariant: tipoPedido.value === 'domicilio' ? '' : 'ok'
     }
 
+    ultimaVentaRegistrada.value = nuevaVenta
     HISTORIAL_VENTAS_MOCK.unshift(nuevaVenta)
     guardarVentasStorage()
 
@@ -448,7 +533,10 @@ export const useCartStore = defineStore('cart', () => {
     datosCliente,
     items,
     metodoPago,
+    ultimaVentaRegistrada,
     subtotal,
+    subtotalSinPostreGratis,
+    tienePostreGratisEnCarrito,
     descuento,
     envio,
     total,
@@ -460,6 +548,7 @@ export const useCartStore = defineStore('cart', () => {
     vaciarCarrito,
     agregarPromo2x1Configurable,
     agregarPaqueteSushi5x4,
+    agregarPromoGeneralAlCarrito,
     agregarProducto,
     actualizarExtrasItem,
     setMetodoPago,

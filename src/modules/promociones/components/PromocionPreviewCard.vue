@@ -1,8 +1,18 @@
 <script setup>
+import ProductoVectorArt from '@/components/ui/ProductoVectorArt.vue'
+
 defineProps({
   nombrePromo: {
     type: String,
     default: 'Martes de 2x1'
+  },
+  subtituloPromo: {
+    type: String,
+    default: ''
+  },
+  tipoDescuento: {
+    type: String,
+    default: '2x1'
   }
 })
 </script>
@@ -12,12 +22,19 @@ defineProps({
     class="card"
     style="width:290px;flex:none;display:flex;flex-direction:column;gap:12px;background:var(--acs);border-color:transparent"
   >
-    <h2 style="font-size:15px;font-weight:600">Vista previa</h2>
+    <h2 style="font-size:15px;font-weight:600">Vista previa en catálogo</h2>
+    <div style="height:105px;border-radius:12px;overflow:hidden;border:1px solid var(--bd)">
+      <ProductoVectorArt
+        :nombre="nombrePromo || 'Promoción 2x1'"
+        categoria="Promociones"
+        :subtitulo="subtituloPromo || tipoDescuento"
+      />
+    </div>
     <div
       style="background:var(--sf);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;font-size:14px"
     >
       <div class="row" style="justify-content:space-between">
-        <span>2 × Tampico Roll</span>
+        <span>2 × Rollos del menú</span>
         <span>$240</span>
       </div>
       <div class="row" style="justify-content:space-between;color:var(--act);font-weight:500">

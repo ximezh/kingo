@@ -158,9 +158,50 @@ app.get('/api/empleados', async (_req, res) => {
   }
 })
 
+function validarPayloadEmpleado({ nombre, usuario, password, rol, telefono }, esEdicion = false) {
+  const nombreLimpio = String(nombre || '').trim()
+  const usuarioLimpio = String(usuario || '').trim()
+  const passLimpio = String(password || '').trim()
+  const digitosTel = String(telefono || '').replace(/\D/g, '')
+  const rolesPermitidos = ['admin', 'cajero', 'repartidor']
+
+  if (!nombreLimpio || nombreLimpio.length < 3 || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ.\s]+$/.test(nombreLimpio)) {
+    return 'El nombre completo debe tener al menos 3 letras y solo caracteres válidos.'
+  }
+  if (!usuarioLimpio || usuarioLimpio.length < 3 || !/^[a-zA-Z0-9._-]+$/.test(usuarioLimpio)) {
+    return 'El usuario debe tener al menos 3 caracteres sin espacios (letras, números, punto o guion).'
+  }
+  if (!esEdicion && passLimpio.length < 3) {
+    return 'La contraseña debe tener al menos 3 caracteres.'
+  }
+  if (esEdicion && passLimpio !== '' && passLimpio.length < 3) {
+    return 'La nueva contraseña debe tener al menos 3 caracteres.'
+  }
+  if (!rolesPermitidos.includes(rol)) {
+    return 'El rol seleccionado no es válido.'
+  }
+  if (digitosTel.length !== 10) {
+    return 'El teléfono debe contener exactamente 10 dígitos numéricos.'
+  }
+  return null
+}
+
 app.post('/api/empleados', async (req, res) => {
   const { nombre, usuario, password, rol, telefono, activo } = req.body || {}
+  const errorVal = validarPayloadEmpleado({ nombre, usuario, password, rol, telefono }, false)
+  if (errorVal) {
+    return res.status(400).json({ error: errorVal })
+  }
+
   try {
+    const dupCheck = await pool.query(
+      'SELECT id FROM usuarios WHERE LOWER(username) = LOWER($1) LIMIT 1',
+      [String(usuario).trim()]
+    )
+    if (dupCheck.rows.length > 0) {
+      return res.status(409).json({ error: 'Ese nombre de usuario ya existe en la base de datos.' })
+    }
+
     const partes = String(nombre || '').trim().split(/\s+/).filter(Boolean)
     const iniciales =
       partes.length === 0
@@ -178,7 +219,7 @@ app.post('/api/empleados', async (req, res) => {
       [
         String(nombre || '').trim(),
         String(usuario || '').trim(),
-        String(password || '123456'),
+        String(password || '123'),
         rol || 'cajero',
         iniciales,
         String(telefono || '').trim() || null,
@@ -202,7 +243,20 @@ app.post('/api/empleados', async (req, res) => {
 app.put('/api/empleados/:id', async (req, res) => {
   const id = Number(req.params.id)
   const { nombre, usuario, password, rol, telefono, activo } = req.body || {}
+  const errorVal = validarPayloadEmpleado({ nombre, usuario, password, rol, telefono }, true)
+  if (errorVal) {
+    return res.status(400).json({ error: errorVal })
+  }
+
   try {
+    const dupCheck = await pool.query(
+      'SELECT id FROM usuarios WHERE LOWER(username) = LOWER($1) AND id <> $2 LIMIT 1',
+      [String(usuario).trim(), id]
+    )
+    if (dupCheck.rows.length > 0) {
+      return res.status(409).json({ error: 'Ese nombre de usuario ya está asignado a otro empleado en la base de datos.' })
+    }
+
     const partes = String(nombre || '').trim().split(/\s+/).filter(Boolean)
     const iniciales =
       partes.length === 0
@@ -571,11 +625,15 @@ app.get('/api/ventas', async (_req, res) => {
       SELECT
         v.id,
         v.folio,
+        TO_CHAR(v.fecha_hora, 'YYYY-MM-DD') AS "fechaISO",
         TO_CHAR(v.fecha_hora, 'HH24:MI') AS hora,
         v.tipo_pedido,
         v.estado,
         v.numero_mesa,
         v.nombre_cliente,
+        v.telefono_cliente,
+        v.direccion_entrega,
+        v.referencia_entrega,
         v.metodo_pago,
         v.subtotal::FLOAT AS subtotal,
         v.descuento_total::FLOAT AS descuento,
@@ -617,16 +675,29 @@ app.get('/api/ventas', async (_req, res) => {
       cancelada: { label: 'Cancelada', variant: 'off' }
     }
 
+    const hoyDate = new Date()
+    const hoyISO = `${hoyDate.getFullYear()}-${String(hoyDate.getMonth() + 1).padStart(2, '0')}-${String(hoyDate.getDate()).padStart(2, '0')}`
+    const mesesCortos = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
     const historial = rows.map((r) => {
       const est = estadoLabels[r.estado] || { label: 'Completada', variant: 'ok' }
       const items = Array.isArray(r.itemsSnapshot) ? r.itemsSnapshot : []
+      const isoVenta = r.fechaISO || hoyISO
+      const [yStr, mStr, dStr] = isoVenta.split('-')
+      const etiquetaDia = `${Number(dStr)} ${mesesCortos[(Number(mStr) || 1) - 1]} ${yStr}`
       return {
         id: r.id,
         folio: r.folio,
-        fechaHora: `Hoy, ${r.hora}`,
+        fechaISO: r.fechaISO || hoyISO,
+        hora: r.hora || '14:00',
+        fechaHora: `${etiquetaDia}, ${r.hora}`,
         tipo: tipoLabels[r.tipo_pedido] || 'En local',
         tipoCodigo: r.tipo_pedido,
         clienteMesa: r.tipo_pedido === 'local' ? r.numero_mesa || 'Mesa 1' : r.nombre_cliente || 'Cliente',
+        mesa: r.numero_mesa || null,
+        telefono: r.telefono_cliente || '',
+        direccion: r.direccion_entrega || '',
+        referencia: r.referencia_entrega || '',
         pago: r.metodo_pago,
         subtotal: Math.round(r.subtotal || r.total),
         descuento: Math.round(r.descuento || 0),
@@ -834,13 +905,13 @@ app.get('/api/entregas/pedidos', async (_req, res) => {
         metodoPago: `Total · ${r.metodo_pago}`,
         total: `$${Math.round(r.total)}`,
         estado:
-          est === 'entregado'
-            ? 'Entregado'
-            : est === 'no_entregado'
-              ? 'No entregado'
-              : est === 'por_asignar'
-                ? 'Por asignar'
-                : 'Por entregar',
+          est === 'por_entregar'
+            ? 'Por entregar'
+            : est === 'por_asignar'
+              ? 'Por asignar'
+              : est === 'no_entregado'
+                ? 'No entregado'
+                : 'Entregado',
         horaEntrega: r.hora_entrega ? `Entregado a las ${r.hora_entrega} hrs` : null,
         lineas: r.lineas,
         envio: `$${Math.round(r.envio)}`

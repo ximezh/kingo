@@ -20,11 +20,11 @@ const productoActual = computed(() => {
   if (Number.isFinite(qId) && qId > 0) {
     return PRODUCTOS_MOCK.find((p) => Number(p.id) === qId) || null
   }
-  return PRODUCTOS_MOCK.find((p) => p.id === 131) || PRODUCTOS_MOCK[0] || null
+  return null
 })
 
 const rutaRegreso = computed(() =>
-  route.query.id ? `/admin/productos/editar?id=${route.query.id}` : '/admin/productos/editar'
+  route.query.id ? `/admin/productos/editar?id=${route.query.id}` : '/admin/productos/nuevo'
 )
 
 const variantesIniciales =

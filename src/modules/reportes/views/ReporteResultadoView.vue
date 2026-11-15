@@ -11,13 +11,17 @@ import {
   PERIODOS_REPORTE_MOCK,
   reporteConfigState,
   obtenerDatosReporteDinamico,
-  generarNombreArchivoReporte
+  obtenerRangoFechasPeriodo,
+  generarNombreArchivoReporte,
+  generarDashboardXlsxBlob,
+  generarCSVReporteKinGo
 } from '@/services/reportes.service'
 
 const reporte = computed(() => obtenerDatosReporteDinamico(reporteConfigState.value))
 
 const showModalExportar = ref(false)
 const formatoExportar = ref('pdf') // 'pdf' | 'excel'
+const tipoArchivoExcel = ref('xlsx') // 'xlsx' | 'csv'
 const nombreArchivoPersonalizado = ref('')
 
 const subtituloDinamico = computed(() => {
@@ -35,15 +39,12 @@ function cambiarTipoRapido(tipo) {
 
 function cambiarPeriodoRapido(per) {
   reporteConfigState.value.periodo = per
-  if (per === 'Hoy') {
-    reporteConfigState.value.fechaDesde = '25 oct 2026'
-    reporteConfigState.value.fechaHasta = '25 oct 2026'
-  } else if (per === 'Esta semana') {
-    reporteConfigState.value.fechaDesde = '19 oct 2026'
-    reporteConfigState.value.fechaHasta = '25 oct 2026'
-  } else if (per === 'Este mes') {
-    reporteConfigState.value.fechaDesde = '01 oct 2026'
-    reporteConfigState.value.fechaHasta = '31 oct 2026'
+  if (per !== 'Personalizado') {
+    const rango = obtenerRangoFechasPeriodo(per)
+    reporteConfigState.value.fechaDesde = rango.fechaDesde
+    reporteConfigState.value.fechaHasta = rango.fechaHasta
+    reporteConfigState.value.desdeISO = rango.desdeISO
+    reporteConfigState.value.hastaISO = rango.hastaISO
   }
 }
 
@@ -59,31 +60,29 @@ function regenerarNombreAutomatico() {
 
 function confirmarDescargaReporte() {
   const baseName = (nombreArchivoPersonalizado.value || '').trim() || generarNombreArchivoReporte(reporteConfigState.value)
-  const cleanName = baseName.replace(/\.(pdf|csv|xlsx)$/i, '')
+  const cleanName = baseName.replace(/\.(pdf|csv|xls|xlsx)$/i, '')
 
   if (formatoExportar.value === 'excel') {
-    const filas = [
-      ['Reporte KinGo', reporte.value.titulo],
-      ['Periodo', `${reporteConfigState.value.fechaDesde} al ${reporteConfigState.value.fechaHasta} (${reporteConfigState.value.periodo})`],
-      [],
-      ['Indicador', 'Valor'],
-      ...reporte.value.kpis.map((k) => [k.label, k.valor]),
-      [],
-      [reporte.value.graficaTitulo || 'Serie', 'Valor'],
-      ...reporte.value.ventasPorDia.map((d) => [d.dia, d.valor]),
-      [],
-      [reporte.value.tituloPanel1 || 'Desglose', 'Detalle'],
-      ...reporte.value.porTipoPedido.map((t) => [t.label, t.detalle]),
-      [],
-      [reporte.value.tituloPanel2 || 'Ranking', 'Resultado'],
-      ...reporte.value.masVendidos.map((p) => [p.nombre, p.piezas])
-    ]
-    const csv = '\uFEFF' + filas.map((f) => f.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
+    if (tipoArchivoExcel.value === 'csv') {
+      const csvData = generarCSVReporteKinGo(reporte.value, reporteConfigState.value)
+      const blobCsv = new Blob(['\uFEFF' + csvData], {
+        type: 'text/csv;charset=utf-8;'
+      })
+      const urlCsv = URL.createObjectURL(blobCsv)
+      const linkCsv = document.createElement('a')
+      linkCsv.href = urlCsv
+      linkCsv.download = `${cleanName}.csv`
+      linkCsv.click()
+      URL.revokeObjectURL(urlCsv)
+      showModalExportar.value = false
+      return
+    }
+
+    const blobXlsx = generarDashboardXlsxBlob(reporte.value, reporteConfigState.value)
+    const url = URL.createObjectURL(blobXlsx)
     const link = document.createElement('a')
     link.href = url
-    link.download = `${cleanName}.csv`
+    link.download = `${cleanName}.xlsx`
     link.click()
     URL.revokeObjectURL(url)
     showModalExportar.value = false
@@ -199,14 +198,30 @@ function confirmarDescargaReporte() {
     width="480px"
   >
     <h2 style="font-size:19px;font-weight:600">
-      Exportar {{ formatoExportar === 'pdf' ? 'PDF' : 'Excel (.csv)' }}
+      Exportar {{ formatoExportar === 'pdf' ? 'PDF' : 'Excel' }}
     </h2>
+
+    <div v-if="formatoExportar === 'excel'" class="note" style="font-size:12.5px;padding:10px 12px">
+      Se descargará un archivo de Excel con el reporte.
+    </div>
+
+    <div v-if="formatoExportar === 'excel'" style="display:flex;flex-direction:column;gap:6px">
+      <span class="lbl" style="margin:0">Formato de hoja de cálculo</span>
+      <div class="seg" style="height:38px">
+        <span :class="{ on: tipoArchivoExcel === 'xlsx' }" style="cursor:pointer" @click="tipoArchivoExcel = 'xlsx'">
+          Dashboard Excel (.xlsx)
+        </span>
+        <span :class="{ on: tipoArchivoExcel === 'csv' }" style="cursor:pointer" @click="tipoArchivoExcel = 'csv'">
+          CSV clásico (.csv)
+        </span>
+      </div>
+    </div>
 
     <div style="display:flex;flex-direction:column;gap:8px">
       <BaseInput
         id="rep-fname"
         v-model="nombreArchivoPersonalizado"
-        :label="`Nombre del archivo (${formatoExportar === 'pdf' ? '.pdf' : '.csv'})`"
+        :label="`Nombre del archivo (${formatoExportar === 'pdf' ? '.pdf' : tipoArchivoExcel === 'csv' ? '.csv' : '.xlsx'})`"
         type="text"
       />
       <div class="row" style="justify-content:flex-end">

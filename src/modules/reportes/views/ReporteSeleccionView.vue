@@ -5,12 +5,18 @@ import {
   TIPOS_REPORTE_MOCK,
   PERIODOS_REPORTE_MOCK,
   reporteConfigState,
-  generarNombreArchivoReporte
+  obtenerRangoFechasPeriodo
 } from '@/services/reportes.service'
 
 const router = useRouter()
 const tipos = ref(TIPOS_REPORTE_MOCK)
 const periodos = ref(PERIODOS_REPORTE_MOCK)
+
+const rangoInicial = obtenerRangoFechasPeriodo(reporteConfigState.value.periodo || 'Esta semana')
+if (reporteConfigState.value.periodo !== 'Personalizado') {
+  reporteConfigState.value.fechaDesde = rangoInicial.fechaDesde
+  reporteConfigState.value.fechaHasta = rangoInicial.fechaHasta
+}
 
 const selectedTipo = ref(reporteConfigState.value.tipoId)
 const selectedPeriodo = ref(reporteConfigState.value.periodo)
@@ -25,15 +31,10 @@ function elegirTipoReporte(tipo) {
 
 function elegirPeriodo(p) {
   selectedPeriodo.value = p
-  if (p === 'Hoy') {
-    fechaDesde.value = '25 oct 2026'
-    fechaHasta.value = '25 oct 2026'
-  } else if (p === 'Esta semana') {
-    fechaDesde.value = '19 oct 2026'
-    fechaHasta.value = '25 oct 2026'
-  } else if (p === 'Este mes') {
-    fechaDesde.value = '01 oct 2026'
-    fechaHasta.value = '25 oct 2026'
+  if (p !== 'Personalizado') {
+    const rango = obtenerRangoFechasPeriodo(p)
+    fechaDesde.value = rango.fechaDesde
+    fechaHasta.value = rango.fechaHasta
   }
 }
 

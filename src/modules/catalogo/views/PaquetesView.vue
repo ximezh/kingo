@@ -24,6 +24,9 @@ const mensajeGuardado = ref('')
 // Modal para agregar cualquier platillo al paquete (Yakimeshi, Teppanyaki, Sushi, Bebidas, etc.)
 const showModalProducto = ref(false)
 const showModalEliminarPaquete = ref(false)
+const showModalNuevoPaquete = ref(false)
+const nuevoPaqueteNombre = ref('')
+const nuevoPaquetePrecio = ref('250')
 const busquedaModal = ref('')
 const categoriaModal = ref('Todas')
 const cantidadAgregar = ref(1)
@@ -98,13 +101,21 @@ function confirmarAgregarPlatilloAPaquete() {
   showModalProducto.value = false
 }
 
-function crearNuevoPaquete() {
+function abrirModalNuevoPaquete() {
+  nuevoPaqueteNombre.value = `Paquete ${String.fromCharCode(65 + paquetes.value.length)}`
+  nuevoPaquetePrecio.value = '250'
+  showModalNuevoPaquete.value = true
+}
+
+function confirmarCrearNuevoPaquete() {
   const nuevoId = Date.now()
+  const nombreLimpio = nuevoPaqueteNombre.value.trim() || `Nuevo Paquete ${paquetes.value.length + 1}`
+  const precioNum = Number(String(nuevoPaquetePrecio.value).replace(/[^0-9.]/g, '')) || 250
   const nuevo = {
     id: nuevoId,
-    nombre: `Nuevo Paquete ${paquetes.value.length + 1}`,
-    detalle: '$250',
-    precioFijo: '250',
+    nombre: nombreLimpio,
+    detalle: `$${precioNum}`,
+    precioFijo: String(precioNum),
     tipoPrecio: 'fijo',
     cantidadBarras: 2,
     reglaActiva: false,
@@ -127,8 +138,10 @@ function crearNuevoPaquete() {
     categoria: 'Paquetes',
     presentacion: 'Paquete',
     descripcion: nuevo.itemsIncluidos.map((i) => `${i.cantidad} ${i.nombre}`).join(', '),
-    precio: 250,
+    precio: precioNum,
     tieneFoto: true,
+    imagenUrl: null,
+    esVector: true,
     activo: true,
     permiteExtras: false
   })
@@ -136,6 +149,11 @@ function crearNuevoPaquete() {
   guardarProductosStorage()
   reconstruirMenuVenta()
   paqueteActivoId.value = nuevoId
+  showModalNuevoPaquete.value = false
+  mensajeGuardado.value = `Se creó "${nuevo.nombre}". Ahora puedes personalizar los platillos que incluye.`
+  setTimeout(() => {
+    mensajeGuardado.value = ''
+  }, 3500)
 }
 
 function guardarPaqueteActual() {
@@ -215,7 +233,7 @@ function confirmarEliminarPaquete() {
       <h1 style="font-size:22px;font-weight:600">Paquetes</h1>
       <StatusTag>{{ paquetes.length }}</StatusTag>
     </div>
-    <BaseButton variant="p" href="#" @click.prevent="crearNuevoPaquete">+ Nuevo paquete</BaseButton>
+    <BaseButton variant="p" href="#" @click.prevent="abrirModalNuevoPaquete">+ Nuevo paquete</BaseButton>
   </div>
 
   <div v-if="mensajeGuardado" class="note" style="background:var(--oks);color:var(--ok)">
@@ -366,6 +384,39 @@ function confirmarEliminarPaquete() {
       </div>
     </div>
   </div>
+
+  <!-- Modal de confirmación para crear nuevo paquete -->
+  <BaseModal
+    v-model="showModalNuevoPaquete"
+    aria-label="Crear nuevo paquete"
+    width="430px"
+  >
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="ico" style="width:44px;height:44px;border-radius:12px;flex:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4l9 5-9 5-9-5zM3 14l9 5 9-5"></path>
+        </svg>
+      </div>
+      <h2 style="font-size:18px;font-weight:700;margin:0">¿Crear un nuevo paquete?</h2>
+    </div>
+
+    <BaseInput
+      id="np-nombre"
+      v-model="nuevoPaqueteNombre"
+      label="Nombre del paquete"
+      type="text"
+      placeholder="Ej. Paquete Especial"
+    />
+
+    <div class="note" style="font-size:12.5px;padding:10px 12px">
+      Al confirmar podrás elegir qué platillos, rollos o bebidas incluye este paquete.
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+      <BaseButton variant="s" href="#" @click.prevent="showModalNuevoPaquete = false">Cancelar</BaseButton>
+      <BaseButton variant="p" href="#" @click.prevent="confirmarCrearNuevoPaquete">Sí, crear paquete</BaseButton>
+    </div>
+  </BaseModal>
 
   <!-- Modal de confirmación para eliminar paquete -->
   <BaseModal

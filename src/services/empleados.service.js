@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { formatearFechaCortaEs, obtenerFechaISOLocal } from '@/services/ventas.service'
 
 const STORAGE_EMPLEADOS_KEY = 'kingo_empleados_v2_tres'
 
@@ -67,7 +68,17 @@ export async function sincronizarEmpleadosDesdeDB() {
     if (res.ok) {
       const lista = await res.json()
       if (Array.isArray(lista) && lista.length > 0) {
-        empleadosState.value = lista
+        // Conservar contraseñas locales y estadoRuta si ya estaban en memoria
+        const mapaPrevio = new Map(empleadosState.value.map((e) => [e.usuario.toLowerCase(), e]))
+        empleadosState.value = lista.map((dbEmp) => {
+          const prev = mapaPrevio.get(String(dbEmp.usuario || '').toLowerCase())
+          return {
+            ...dbEmp,
+            password: prev?.password || '123',
+            estadoRuta: prev?.estadoRuta || dbEmp.estadoRuta || 'Disponible',
+            pedidosEnRuta: prev?.pedidosEnRuta ?? dbEmp.pedidosEnRuta ?? 0
+          }
+        })
         guardarEmpleadosStorage()
       }
     }
@@ -93,14 +104,70 @@ export function obtenerIniciales(nombre) {
   return (partes[0][0] + partes[1][0]).toUpperCase()
 }
 
-export function agregarEmpleado(datos) {
+export function validarFormularioEmpleado(datos, editandoId = null) {
+  const errores = {}
+  const nombre = String(datos.nombre || '').trim()
+  const usuario = String(datos.usuario || '').trim()
+  const password = String(datos.password || '').trim()
+  const digitosTel = String(datos.telefono || '').replace(/\D/g, '')
+  const rol = datos.rol
+
+  if (!nombre || nombre.length < 3) {
+    errores.nombre = 'El nombre completo debe tener al menos 3 letras.'
+  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ.\s]+$/.test(nombre)) {
+    errores.nombre = 'El nombre solo debe contener letras y espacios.'
+  }
+
+  if (!usuario || usuario.length < 3) {
+    errores.usuario = 'El usuario debe tener al menos 3 caracteres.'
+  } else if (!/^[a-zA-Z0-9._-]+$/.test(usuario)) {
+    errores.usuario = 'Sin espacios; usa solo letras, números, punto o guion.'
+  } else {
+    const dupUsr = empleadosState.value.find(
+      (e) => e.id !== editandoId && e.usuario.trim().toLowerCase() === usuario.toLowerCase()
+    )
+    if (dupUsr) {
+      errores.usuario = `El usuario "${usuario}" ya está asignado a ${dupUsr.nombre}.`
+    }
+  }
+
+  if (!password || password.length < 3) {
+    errores.password = 'La contraseña debe tener al menos 3 caracteres.'
+  }
+
+  if (digitosTel.length !== 10) {
+    errores.telefono = 'Ingresa exactamente los 10 dígitos del número celular.'
+  } else {
+    const dupTel = empleadosState.value.find(
+      (e) => e.id !== editandoId && String(e.telefono || '').replace(/\D/g, '') === digitosTel
+    )
+    if (dupTel) {
+      errores.telefono = `Este teléfono ya está registrado con ${dupTel.nombre}.`
+    }
+  }
+
+  if (!['admin', 'cajero', 'repartidor'].includes(rol)) {
+    errores.rol = 'Selecciona un rol válido.'
+  }
+
+  const listaMensajes = Object.values(errores)
+  return {
+    valido: listaMensajes.length === 0,
+    errores,
+    mensajePrincipal: listaMensajes[0] || ''
+  }
+}
+
+export async function agregarEmpleado(datos) {
   const rolLabels = {
     admin: 'Administrador',
     cajero: 'Cajero',
     repartidor: 'Repartidor'
   }
+  const fechaHoy = formatearFechaCortaEs(obtenerFechaISOLocal(new Date()), true)
+  const tempId = Date.now()
   const nuevo = {
-    id: Date.now(),
+    id: tempId,
     nombre: datos.nombre.trim(),
     usuario: datos.usuario.trim(),
     password: datos.password || '123',
@@ -112,14 +179,40 @@ export function agregarEmpleado(datos) {
     activo: datos.activo !== false,
     estadoRuta: 'Disponible',
     pedidosEnRuta: 0,
-    fechaAlta: '25 oct 2026'
+    fechaAlta: fechaHoy
   }
   empleadosState.value.unshift(nuevo)
   guardarEmpleadosStorage()
+
+  try {
+    const res = await fetch('http://localhost:3000/api/empleados', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: nuevo.nombre,
+        usuario: nuevo.usuario,
+        password: nuevo.password,
+        rol: nuevo.rol,
+        telefono: nuevo.telefono,
+        activo: nuevo.activo
+      })
+    })
+    if (res.ok) {
+      const creadoDB = await res.json()
+      const idx = empleadosState.value.findIndex((e) => e.id === tempId)
+      if (idx !== -1 && creadoDB?.id) {
+        empleadosState.value[idx].id = creadoDB.id
+        guardarEmpleadosStorage()
+      }
+    }
+  } catch {
+    // Mantiene persistencia en localStorage si el backend no está encendido
+  }
+
   return nuevo
 }
 
-export function actualizarEmpleado(id, datos) {
+export async function actualizarEmpleado(id, datos) {
   const idx = empleadosState.value.findIndex((e) => e.id === id)
   if (idx === -1) return null
   const rolLabels = {
@@ -140,12 +233,59 @@ export function actualizarEmpleado(id, datos) {
     activo: Boolean(datos.activo)
   }
   guardarEmpleadosStorage()
+
+  try {
+    await fetch(`http://localhost:3000/api/empleados/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: empleadosState.value[idx].nombre,
+        usuario: empleadosState.value[idx].usuario,
+        password: empleadosState.value[idx].password,
+        rol: empleadosState.value[idx].rol,
+        telefono: empleadosState.value[idx].telefono,
+        activo: empleadosState.value[idx].activo
+      })
+    })
+  } catch {
+    // Fallback local
+  }
+
   return empleadosState.value[idx]
 }
 
-export function toggleEstadoEmpleado(id) {
+export async function toggleEstadoEmpleado(id) {
   const emp = empleadosState.value.find((e) => e.id === id)
   if (!emp) return
   emp.activo = !emp.activo
+  guardarEmpleadosStorage()
+
+  try {
+    await fetch(`http://localhost:3000/api/empleados/${id}/toggle`, {
+      method: 'PATCH'
+    })
+  } catch {
+    // Fallback local
+  }
+}
+
+export function actualizarEstadoRutaRepartidor(identificador, enRuta = true) {
+  const q = String(identificador || '').trim().toLowerCase()
+  const rep = empleadosState.value.find(
+    (e) =>
+      e.rol === 'repartidor' &&
+      (String(e.id) === q ||
+        e.nombre.toLowerCase() === q ||
+        e.usuario.toLowerCase() === q)
+  ) || empleadosState.value.find((e) => e.rol === 'repartidor' && e.activo)
+
+  if (!rep) return
+  if (enRuta) {
+    rep.estadoRuta = 'En ruta'
+    rep.pedidosEnRuta = Math.max(1, (rep.pedidosEnRuta || 0) + 1)
+  } else {
+    rep.pedidosEnRuta = Math.max(0, (rep.pedidosEnRuta || 1) - 1)
+    rep.estadoRuta = rep.pedidosEnRuta > 0 ? 'En ruta' : 'Disponible'
+  }
   guardarEmpleadosStorage()
 }

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import StatusTag from '@/components/ui/StatusTag.vue'
+import { formatearFechaHoraVenta } from '@/services/ventas.service'
 
 defineProps({
   ventas: {
@@ -14,6 +15,13 @@ const route = useRoute()
 const rutaDomicilios = computed(() =>
   route.path.startsWith('/admin') ? '/admin/domicilios' : '/cajero/domicilios'
 )
+
+function etiquetaFecha(v) {
+  if (v.fechaISO) {
+    return formatearFechaHoraVenta(v.fechaISO, v.hora)
+  }
+  return v.fechaHora || 'Hoy'
+}
 </script>
 
 <template>
@@ -28,12 +36,16 @@ const rutaDomicilios = computed(() =>
       <span>Estado</span>
     </div>
     <div v-for="v in ventas" :key="v.folio" class="tr">
-      <span style="font-weight:500">{{ v.folio }}</span>
-      <span class="sub">{{ v.fechaHora }}</span>
+      <span style="font-weight:600">{{ v.folio }}</span>
+      <span class="fecha-cell">
+        <span :class="['fecha-badge', { hoy: etiquetaFecha(v).startsWith('Hoy') }]">
+          {{ etiquetaFecha(v) }}
+        </span>
+      </span>
       <span>{{ v.tipo }}</span>
-      <span>{{ v.clienteMesa }}</span>
+      <span style="font-weight:500">{{ v.clienteMesa }}</span>
       <span>{{ v.pago }}</span>
-      <span style="font-weight:600">{{ v.total }}</span>
+      <span style="font-weight:700">{{ v.total }}</span>
       <span>
         <RouterLink
           v-if="v.estado === 'Por asignar'"
@@ -70,20 +82,37 @@ const rutaDomicilios = computed(() =>
   color: #fff;
   transform: translateY(-1px);
 }
+
+.fecha-cell {
+  display: flex;
+  align-items: center;
+}
+
+.fecha-badge {
+  font-size: 13px;
+  color: var(--tx2);
+  font-weight: 500;
+}
+
+.fecha-badge.hoy {
+  color: var(--act);
+  font-weight: 600;
+}
+
 .th,
 .tr {
   display: grid;
-  grid-template-columns: 0.7fr 1.2fr 1fr 1.2fr 1fr 0.8fr 1.1fr;
+  grid-template-columns: 0.7fr 1.3fr 1fr 1.3fr 1fr 0.8fr 1fr;
   gap: 12px;
   align-items: center;
-  padding: 0 22px;
+  padding: 0 20px;
 }
 
 .th {
   height: 44px;
   background: var(--bg2);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tx2);
   border-bottom: 1px solid var(--bd);
 }

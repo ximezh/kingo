@@ -33,61 +33,160 @@ function handleLogout() {
 </script>
 
 <template>
-  <div style="padding:28px 20px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border-bottom:1px solid var(--bd)">
-    <div class="row">
-      <div style="width:36px;height:36px;border-radius:10px;background:#F26A1B;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center">K</div>
+  <!-- Barra superior limpia con letras grandes -->
+  <header class="rep-top-bar">
+    <div class="row" style="gap:12px">
+      <div class="rep-k-icon">K</div>
       <div>
-        <div style="font-size:12px;color:var(--tx2)">Repartidor</div>
-        <div style="font-size:16px;font-weight:600">Hola, {{ nombreRepartidor }}</div>
+        <div class="rep-role-txt">Repartidor</div>
+        <div class="rep-name-txt">Hola, {{ nombreRepartidor }}</div>
       </div>
     </div>
-    <a
-      href="/login"
-      class="back"
-      style="font-size:13px;font-weight:500;color:var(--act);text-decoration:none"
-      @click.prevent="handleLogout"
-    >Salir</a>
-  </div>
 
-  <div style="padding:20px;display:flex;flex-direction:column;gap:16px;flex:1">
-    <h1 style="font-size:22px;font-weight:600">Mis pedidos</h1>
-    <div class="seg rep-seg">
+    <button type="button" class="rep-salir-btn" @click="handleLogout">
+      Salir
+    </button>
+  </header>
+
+  <main class="rep-page-body">
+    <h1 class="rep-page-title">Mis pedidos</h1>
+
+    <!-- Pestañas grandes y fáciles de tocar -->
+    <div class="seg rep-tabs-lg">
       <span :class="{ on: activeTab === 'por_entregar' }" @click="activeTab = 'por_entregar'">
-        Por entregar · {{ pedidosPorEntregar.length }}
+        Por entregar ({{ pedidosPorEntregar.length }})
       </span>
       <span :class="{ on: activeTab === 'entregados' }" @click="activeTab = 'entregados'">
-        Entregados · {{ pedidosEntregados.length }}
+        Entregados ({{ pedidosEntregados.length }})
       </span>
     </div>
 
     <template v-if="listaMostrada.length > 0">
-      <PedidoRepartidorCard
-        v-for="pedido in listaMostrada"
-        :key="pedido.folio"
-        :pedido="pedido"
-        :to="`/repartidor/entrega/${pedido.id}`"
-      />
+      <div class="rep-list">
+        <PedidoRepartidorCard
+          v-for="pedido in listaMostrada"
+          :key="pedido.folio"
+          :pedido="pedido"
+          :to="`/repartidor/entrega/${pedido.id}`"
+        />
+      </div>
     </template>
 
-    <div
-      v-else
-      class="card"
-      style="align-items:center;justify-content:center;padding:36px 20px;text-align:center;gap:8px;border-radius:16px"
-    >
-      <div style="font-size:15px;font-weight:600">
-        {{ activeTab === 'por_entregar' ? 'Sin entregas pendientes' : 'Sin entregas finalizadas' }}
+    <div v-else class="card rep-empty">
+      <div class="rep-empty-title">
+        {{ activeTab === 'por_entregar' ? 'No tienes pedidos pendientes' : 'Aún no hay pedidos entregados' }}
       </div>
+      <p class="rep-empty-sub">
+        {{
+          activeTab === 'por_entregar'
+            ? 'Cuando caja te asigne un pedido aparecerá aquí con letra grande.'
+            : 'Aquí verás los pedidos que vayas entregando.'
+        }}
+      </p>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>
-.rep-seg {
-  border-radius: 12px;
-  height: 46px;
+.rep-top-bar {
+  padding: 20px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--bd);
 }
 
-.rep-seg span {
-  font-size: 14px;
+.rep-k-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #F26A1B;
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.rep-role-txt {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.rep-name-txt {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.rep-salir-btn {
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 2px solid var(--bd);
+  background: var(--sf);
+  color: var(--act);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rep-page-body {
+  padding: 20px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+}
+
+.rep-page-title {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.rep-tabs-lg {
+  height: 56px;
+  border-radius: 14px;
+  padding: 5px;
+}
+
+.rep-tabs-lg span {
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+.rep-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rep-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 42px 22px;
+  text-align: center;
+  gap: 10px;
+  border-radius: 20px;
+}
+
+.rep-empty-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.rep-empty-sub {
+  font-size: 16px;
+  color: var(--tx2);
+  line-height: 1.45;
+  max-width: 300px;
 }
 </style>

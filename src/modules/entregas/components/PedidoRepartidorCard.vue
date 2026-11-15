@@ -1,6 +1,5 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import StatusTag from '@/components/ui/StatusTag.vue'
 
 defineProps({
   pedido: {
@@ -15,60 +14,165 @@ defineProps({
 </script>
 
 <template>
-  <div class="card rep-pedido-card">
-    <div class="row" style="justify-content:space-between">
-      <span style="font-size:15px;font-weight:600">{{ pedido.folio }} · {{ pedido.cliente }}</span>
-      <StatusTag :variant="pedido.estado === 'Entregado' ? 'ok' : pedido.estado === 'No entregado' ? 'off' : ''">
+  <div :class="['card', 'rep-card', { pendiente: pedido.estado === 'Por entregar' }]">
+    <!-- Encabezado grande y claro: Folio + Estado -->
+    <div class="rep-card-header">
+      <span class="rep-folio">Pedido {{ pedido.folio }}</span>
+      <span :class="['rep-estado-badge', pedido.estado === 'Entregado' ? 'ok' : pedido.estado === 'No entregado' ? 'err' : 'pend']">
         {{ pedido.estado }}
-      </StatusTag>
+      </span>
     </div>
-    <div style="font-size:14px;line-height:1.5">{{ pedido.direccion }}</div>
-    <div class="sub">{{ pedido.referencia }}</div>
-    <div v-if="pedido.horaEntrega" class="sub" style="color:var(--ok);font-weight:500">
-      ✓ {{ pedido.horaEntrega }}
+
+    <!-- Nombre del cliente en letra grande -->
+    <div class="rep-cliente">
+      {{ pedido.cliente }}
     </div>
-    <div class="row" style="justify-content:space-between;padding:6px 0 4px">
-      <span class="sub">{{ pedido.metodoPago }}</span>
-      <span style="font-size:17px;font-weight:600">{{ pedido.total }}</span>
+
+    <!-- Dirección muy legible y de alto contraste -->
+    <div class="rep-direccion-box">
+      <div class="rep-direccion">{{ pedido.direccion }}</div>
+      <div v-if="pedido.referencia" class="rep-referencia">
+        {{ pedido.referencia }}
+      </div>
     </div>
+
+    <!-- Nota de hora si ya fue finalizado -->
+    <div v-if="pedido.horaEntrega" class="rep-hora-nota" :class="{ err: pedido.estado === 'No entregado' }">
+      {{ pedido.horaEntrega }}
+    </div>
+
+    <!-- Total a cobrar grande y claro -->
+    <div class="rep-cobro-row">
+      <span class="rep-metodo">{{ pedido.metodoPago }}</span>
+      <strong class="rep-total">{{ pedido.total }}</strong>
+    </div>
+
+    <!-- Un solo botón grande y fácil de tocar -->
     <RouterLink
-      class="btn s rep-btn-48"
+      :class="['btn', pedido.estado === 'Por entregar' ? 'p' : 's', 'rep-open-btn']"
       :to="to"
     >
-      {{ pedido.estado === 'Por entregar' ? 'Ver pedido' : 'Ver detalle de entrega' }}
+      {{ pedido.estado === 'Por entregar' ? 'Abrir pedido' : 'Ver resumen' }}
     </RouterLink>
   </div>
 </template>
 
 <style scoped>
-.rep-pedido-card {
-  border-radius: 16px;
-  padding: 18px;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+.rep-card {
+  border-radius: 20px;
+  padding: 20px;
+  gap: 14px;
+  border: 2px solid var(--bd);
 }
 
-.rep-pedido-card:hover {
-  border-color: var(--ac);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+.rep-card.pendiente {
+  border-color: #F26A1B;
 }
 
-/* El botón empieza neutro (.btn.s) y se vuelve naranja (.btn.p) al pasar el cursor por encima */
-.rep-btn-48 {
-  height: 48px;
+.rep-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rep-folio {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--act);
+}
+
+.rep-estado-badge {
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rep-estado-badge.pend {
+  background: #FFF0E0;
+  color: #C94C08;
+}
+
+.rep-estado-badge.ok {
+  background: var(--oks);
+  color: var(--ok);
+}
+
+.rep-estado-badge.err {
+  background: var(--bg2);
+  color: var(--tx2);
+}
+
+.rep-cliente {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--tx);
+  line-height: 1.25;
+}
+
+.rep-direccion-box {
+  background: var(--bg2);
+  border: 1.5px solid var(--bd);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rep-direccion {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tx);
+  line-height: 1.4;
+}
+
+.rep-referencia {
+  font-size: 16px;
+  color: var(--tx2);
+  line-height: 1.35;
+}
+
+.rep-hora-nota {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ok);
+  background: var(--oks);
+  padding: 10px 14px;
   border-radius: 12px;
-  font: 500 15px 'Poppins', sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
 
-.rep-btn-48:hover {
-  background: var(--btn) !important;
-  color: #ffffff !important;
-  border-color: var(--btn) !important;
-  box-shadow: 0 6px 16px rgba(201, 76, 8, 0.28);
-  transform: translateY(-1px);
+.rep-hora-nota.err {
+  color: #9A3412;
+  background: #FFF3E8;
 }
 
-.rep-btn-48:active {
-  transform: scale(0.97);
+.rep-cobro-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px;
+}
+
+.rep-metodo {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.rep-total {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.rep-open-btn {
+  width: 100%;
+  height: 58px;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
 }
 </style>

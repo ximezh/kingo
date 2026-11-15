@@ -1,6 +1,11 @@
 import { reactive } from 'vue'
+import { ROLLOS_PROMO_MOCK } from '@/services/catalogo.service'
 
-const STORAGE_PROMOCIONES_KEY = 'kingo_promociones_v2'
+const STORAGE_PROMOCIONES_KEY = 'kingo_promociones_v4'
+
+export function obtenerNombresTodosLosRollos() {
+  return ROLLOS_PROMO_MOCK.map((r) => r.nombre)
+}
 
 const PROMOCIONES_BASE = [
   {
@@ -8,9 +13,10 @@ const PROMOCIONES_BASE = [
     nombre: '2x1 en Rollos',
     dia: 'Lunes y Martes',
     diasKeys: ['Lun', 'Mar'],
-    productosIncluidos: ['Tampico Roll', 'Acapulco Roll', 'California Roll'],
+    productosIncluidos: obtenerNombresTodosLosRollos(),
+    aplicaTodosLosRollos: true,
     tipoDescuento: '2x1',
-    descuento: '2x1 (se cobra el de mayor precio)',
+    descuento: '2x1 en todos los rollos (se cobra el de mayor precio)',
     vigencia: 'Sin fecha final',
     inicio: '01/10/2026',
     fin: '',
@@ -68,13 +74,13 @@ const PROMOCIONES_BASE = [
     nombre: 'Postre gratis',
     dia: 'Viernes',
     diasKeys: ['Vie'],
-    productosIncluidos: ['Helado de vainilla', 'Tempura Helado'],
+    productosIncluidos: ['Helado de vainilla', 'Tempura Helado', 'Banana Ice'],
     tipoDescuento: 'Precio fijo',
     descuento: 'Postre en compras desde $400',
-    vigencia: 'Terminó 31 ago',
-    inicio: '01/08/2026',
-    fin: '31/08/2026',
-    activa: false,
+    vigencia: 'Sin fecha final',
+    inicio: '01/10/2026',
+    fin: '',
+    activa: true,
     accionTexto: 'Editar',
     accionRuta: '/admin/promociones/editar?id=5'
   }
@@ -85,12 +91,27 @@ function cargarPromocionesIniciales() {
     const saved = localStorage.getItem(STORAGE_PROMOCIONES_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((p) => {
+          if (p.id === 1 && (!Array.isArray(p.productosIncluidos) || p.productosIncluidos.length <= 3)) {
+            return {
+              ...p,
+              aplicaTodosLosRollos: true,
+              productosIncluidos: obtenerNombresTodosLosRollos()
+            }
+          }
+          return p
+        })
+      }
     }
   } catch {
     // ignore
   }
-  return PROMOCIONES_BASE.map((p) => ({ ...p, diasKeys: [...(p.diasKeys || [])] }))
+  return PROMOCIONES_BASE.map((p) => ({
+    ...p,
+    diasKeys: [...(p.diasKeys || [])],
+    productosIncluidos: [...(p.productosIncluidos || [])]
+  }))
 }
 
 export const PROMOCIONES_MOCK = reactive(cargarPromocionesIniciales())

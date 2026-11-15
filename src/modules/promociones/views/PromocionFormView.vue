@@ -1,8 +1,14 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { DIAS_SEMANA_PROMO, PROMOCIONES_MOCK, guardarPromocionesStorage } from '@/services/promociones.service'
+import {
+  DIAS_SEMANA_PROMO,
+  PROMOCIONES_MOCK,
+  guardarPromocionesStorage,
+  obtenerNombresTodosLosRollos
+} from '@/services/promociones.service'
 import { PRODUCTOS_MOCK } from '@/services/catalogo.service'
+import { reconstruirMenuVenta } from '@/services/ventas.service'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -20,19 +26,32 @@ const promoId = computed(() => {
 })
 
 const promoBase = promoId.value ? PROMOCIONES_MOCK.find((p) => p.id === promoId.value) : null
+const todosLosRollosNombres = obtenerNombresTodosLosRollos()
 
 const form = ref({
   nombre: promoBase?.nombre || (esNueva.value ? '' : '2x1 en Rollos'),
   diasSeleccionados: promoBase?.diasKeys ? [...promoBase.diasKeys] : ['Lun', 'Mar'],
-  productosIncluidos: promoBase?.productosIncluidos
-    ? [...promoBase.productosIncluidos]
-    : ['Tampico Roll', 'Acapulco Roll', 'California Roll'],
+  productosIncluidos:
+    promoBase?.productosIncluidos && promoBase.productosIncluidos.length > 0
+      ? [...promoBase.productosIncluidos]
+      : [...todosLosRollosNombres],
   tipoDescuento: promoBase?.tipoDescuento || '2x1',
-  valor: promoBase?.descuento || 'Lleva 2, paga el mayor',
+  valor: promoBase?.descuento || '2x1 en todos los rollos (se cobra el de mayor precio)',
   inicio: promoBase?.inicio || '01/10/2026',
   fin: promoBase?.fin || '',
   activa: promoBase ? promoBase.activa : true
 })
+
+const incluyeTodosLosRollos = computed(
+  () =>
+    todosLosRollosNombres.length > 0 &&
+    todosLosRollosNombres.every((nom) => form.value.productosIncluidos.includes(nom))
+)
+
+function seleccionarTodosLosRollos() {
+  const set = new Set([...form.value.productosIncluidos, ...obtenerNombresTodosLosRollos()])
+  form.value.productosIncluidos = [...set]
+}
 
 const tiposDescuento = ['2x1', 'Porcentaje', 'Precio fijo']
 
@@ -116,6 +135,7 @@ function guardarPromocion() {
     })
   }
   guardarPromocionesStorage()
+  reconstruirMenuVenta()
   router.push('/admin/promociones')
 }
 
@@ -127,6 +147,7 @@ function eliminarPromocionActual() {
       PROMOCIONES_MOCK.splice(idx, 1)
     }
     guardarPromocionesStorage()
+    reconstruirMenuVenta()
     fetch(`http://localhost:3000/api/promociones/${targetId}`, {
       method: 'DELETE'
     }).catch(() => {})
@@ -182,12 +203,40 @@ function handleSubmit(e) {
       </div>
 
       <div>
-        <span class="lbl">Platillos participantes</span>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+          <span class="lbl" style="margin:0">
+            Platillos participantes ({{ form.productosIncluidos.length }})
+          </span>
+          <div class="row" style="gap:8px">
+            <StatusTag v-if="incluyeTodosLosRollos" variant="ok">
+              ✓ Aplican todos los rollos ({{ todosLosRollosNombres.length }})
+            </StatusTag>
+            <a
+              v-else
+              href="#"
+              class="edit"
+              style="font-size:12.5px"
+              @click.prevent="seleccionarTodosLosRollos"
+            >
+              + Incluir todos los rollos
+            </a>
+            <a
+              href="#"
+              class="edit"
+              style="font-size:12.5px"
+              @click.prevent="showModalProductos = true"
+            >
+              + Agregar / editar platillos
+            </a>
+          </div>
+        </div>
+        <div
+          style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-height:132px;overflow-y:auto;padding:10px;border:1px solid var(--bd);border-radius:12px;background:var(--bg2)"
+        >
           <StatusTag
             v-for="prod in form.productosIncluidos"
             :key="prod"
-            style="height:32px;padding:0 12px;font-size:13px;gap:6px"
+            style="height:30px;padding:0 11px;font-size:12.5px;gap:6px"
           >
             <span>{{ prod }}</span>
             <span
@@ -196,12 +245,6 @@ function handleSubmit(e) {
               @click="quitarProductoPromo(prod)"
             >×</span>
           </StatusTag>
-          <a
-            class="chip"
-            href="#"
-            style="border-style:dashed;color:var(--act);font-weight:600"
-            @click.prevent="showModalProductos = true"
-          >+ Agregar platillos</a>
         </div>
       </div>
 
@@ -268,7 +311,11 @@ function handleSubmit(e) {
       </div>
     </form>
 
-    <PromocionPreviewCard :nombre-promo="form.nombre" />
+    <PromocionPreviewCard
+      :nombre-promo="form.nombre"
+      :subtitulo-promo="form.valor"
+      :tipo-descuento="form.tipoDescuento"
+    />
   </div>
 
   <!-- Modal para confirmar eliminación de la promoción -->

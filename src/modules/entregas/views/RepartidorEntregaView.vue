@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import StatusTag from '@/components/ui/StatusTag.vue'
 import { pedidosRepartidorState, guardarEntregasStorage } from '@/services/entregas.service'
 import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
+import { actualizarEstadoRutaRepartidor } from '@/services/empleados.service'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,18 +17,31 @@ const detalle = computed(() => {
   return pedidosRepartidorState.value[0]
 })
 
+const OPCION_SIN_MOTIVO = 'Selecciona un motivo'
+
 const motivosNoEntrega = [
-  'Selecciona un motivo',
+  OPCION_SIN_MOTIVO,
+  'El cliente no quiso pagar / Sin efectivo',
   'El cliente no estaba en el domicilio',
   'Dirección incorrecta o incompleta',
   'El cliente no respondió llamadas',
   'Pedido rechazado al recibir'
 ]
-const motivoSeleccionado = ref('Selecciona un motivo')
+
+const motivoSeleccionado = ref(OPCION_SIN_MOTIVO)
 const errorMotivo = ref('')
 
+// Si selecciona un motivo de no entrega, se deshabilita el botón "Entregado"
+const tieneMotivoNoEntrega = computed(() => motivoSeleccionado.value !== OPCION_SIN_MOTIVO)
+
+function limpiarMotivo() {
+  motivoSeleccionado.value = OPCION_SIN_MOTIVO
+  errorMotivo.value = ''
+}
+
 function marcarEntregado() {
-  if (!detalle.value) return
+  if (!detalle.value || tieneMotivoNoEntrega.value) return
+
   const horaStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
   detalle.value.estado = 'Entregado'
   detalle.value.horaEntrega = `Entregado a las ${horaStr} hrs`
@@ -39,6 +52,7 @@ function marcarEntregado() {
     venta.estadoVariant = 'ok'
   }
 
+  actualizarEstadoRutaRepartidor(detalle.value.repartidor || 'Carlos R.', false)
   guardarEntregasStorage()
   guardarVentasStorage()
 
@@ -53,8 +67,8 @@ function marcarEntregado() {
 
 function marcarNoEntregado() {
   if (!detalle.value) return
-  if (motivoSeleccionado.value === 'Selecciona un motivo') {
-    errorMotivo.value = 'Por favor selecciona el motivo por el cual no se pudo entregar.'
+  if (!tieneMotivoNoEntrega.value) {
+    errorMotivo.value = 'Primero elige arriba el motivo de no entrega.'
     return
   }
   detalle.value.estado = 'No entregado'
@@ -66,6 +80,7 @@ function marcarNoEntregado() {
     venta.estadoVariant = 'off'
   }
 
+  actualizarEstadoRutaRepartidor(detalle.value.repartidor || 'Carlos R.', false)
   guardarEntregasStorage()
   guardarVentasStorage()
 
@@ -80,125 +95,314 @@ function marcarNoEntregado() {
 </script>
 
 <template>
-  <div style="padding:28px 20px 16px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;flex-direction:column;gap:6px">
-    <RouterLink
-      to="/repartidor/pedidos"
-      class="back"
-      style="font-size:13px;font-weight:500;color:var(--act);text-decoration:none;align-self:flex-start"
-    >Mis pedidos</RouterLink>
-    <div class="row" style="justify-content:space-between">
-      <h1 style="font-size:20px;font-weight:600">Pedido {{ detalle.folio }}</h1>
-      <StatusTag :variant="detalle.estado === 'Entregado' ? 'ok' : detalle.estado === 'No entregado' ? 'off' : ''">
-        {{ detalle.estado }}
-      </StatusTag>
-    </div>
-  </div>
-
-  <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;flex:1">
-    <section class="card entrega-card">
-      <div class="row" style="justify-content:space-between">
-        <span style="font-size:15px;font-weight:600">{{ detalle.cliente }}</span>
-        <a
-          :href="`tel:${detalle.telefono.replace(/\s+/g, '')}`"
-          class="edit row"
-          style="gap:4px;font-size:13px;font-weight:500;color:var(--act);text-decoration:none"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-          </svg>
-          Llamar
-        </a>
-      </div>
-      <div class="sub">{{ detalle.telefono }}</div>
-      <div style="font-size:14px;line-height:1.5">{{ detalle.direccion }}</div>
-      <div class="sub">{{ detalle.referencia }}</div>
-    </section>
-
-    <section class="card entrega-card">
-      <div
-        v-for="(ln, idx) in detalle.lineas"
-        :key="idx"
-        class="ln"
-        :style="ln.promo ? 'color:var(--act);font-weight:500' : ''"
-      >
-        <span>{{ ln.label }}</span>
-        <span :style="ln.promo ? '' : 'font-weight:500'">{{ ln.importe }}</span>
-      </div>
-      <div class="ln">
-        <span class="sub">Envío</span>
-        <span style="font-weight:500">{{ detalle.envio }}</span>
-      </div>
-      <div style="height:1px;background:var(--bd);margin:4px 0"></div>
-      <div class="ln" style="font-size:16px;font-weight:600">
-        <span>{{ detalle.metodoPago }}</span>
-        <span>{{ detalle.total }}</span>
-      </div>
-    </section>
-
-    <div v-if="detalle.estado === 'Por entregar'">
-      <label class="lbl" for="mot">Motivo de no entrega (opcional)</label>
-      <select
-        id="mot"
-        v-model="motivoSeleccionado"
-        class="inp entrega-inp"
-        @change="errorMotivo = ''"
-      >
-        <option v-for="motivo in motivosNoEntrega" :key="motivo">{{ motivo }}</option>
-      </select>
-      <span v-if="errorMotivo" style="display:block;margin-top:6px;font-size:12px;color:#C94C08;font-weight:500">
-        {{ errorMotivo }}
-      </span>
-    </div>
-
-    <div
-      v-else
-      class="note"
-      :style="detalle.estado === 'Entregado' ? 'background:var(--oks);color:var(--ok)' : ''"
-    >
-      {{ detalle.horaEntrega }}
-    </div>
-
-    <div style="flex:1"></div>
-
-    <div v-if="detalle.estado === 'Por entregar'" style="display:flex;flex-direction:column;gap:10px;padding-bottom:6px">
-      <a class="btn p entrega-btn" href="/repartidor/pedidos" @click.prevent="marcarEntregado">
-        Marcar como entregado
-      </a>
-      <a class="btn s entrega-btn" href="/repartidor/pedidos" @click.prevent="marcarNoEntregado">
-        No se pudo entregar
-      </a>
-    </div>
-
-    <div v-else style="display:flex;flex-direction:column;gap:10px;padding-bottom:6px">
-      <RouterLink class="btn s entrega-btn" to="/repartidor/pedidos">
-        Volver a la lista de pedidos
+  <template v-if="detalle">
+    <!-- Cabecera grande y limpia -->
+    <header class="ent-header">
+      <RouterLink to="/repartidor/pedidos" class="ent-back-btn">
+        Volver a mis pedidos
       </RouterLink>
-    </div>
-  </div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h1 class="ent-title">Pedido {{ detalle.folio }}</h1>
+        <span :class="['ent-badge', detalle.estado === 'Entregado' ? 'ok' : detalle.estado === 'No entregado' ? 'err' : 'pend']">
+          {{ detalle.estado }}
+        </span>
+      </div>
+    </header>
+
+    <main class="ent-body">
+      <!-- 1. Cliente, dirección y botón grande para llamar -->
+      <section class="card ent-card">
+        <div class="ent-cliente">{{ detalle.cliente }}</div>
+        <div class="ent-direccion">{{ detalle.direccion }}</div>
+        <div v-if="detalle.referencia" class="ent-ref">{{ detalle.referencia }}</div>
+
+        <a
+          :href="`tel:${String(detalle.telefono || '').replace(/\s+/g, '')}`"
+          class="btn s ent-call-btn"
+        >
+          Llamar al {{ detalle.telefono }}
+        </a>
+      </section>
+
+      <!-- 2. Total a cobrar y platillos en letra grande -->
+      <section class="card ent-card">
+        <div class="ent-cobro-destacado">
+          <span>{{ detalle.metodoPago }}</span>
+          <strong>{{ detalle.total }}</strong>
+        </div>
+
+        <div class="ent-lineas">
+          <div
+            v-for="(ln, idx) in detalle.lineas"
+            :key="idx"
+            class="ent-ln"
+          >
+            <span>{{ ln.label }}</span>
+            <strong>{{ ln.importe }}</strong>
+          </div>
+          <div class="ent-ln" style="color:var(--tx2)">
+            <span>Envío</span>
+            <strong>{{ detalle.envio }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Acciones claras y botones grandes -->
+      <template v-if="detalle.estado === 'Por entregar'">
+        <!-- Botón principal grande para confirmar entrega -->
+        <button
+          type="button"
+          class="btn p ent-main-btn"
+          :disabled="tieneMotivoNoEntrega"
+          @click="marcarEntregado"
+        >
+          Marcar como entregado
+        </button>
+
+        <!-- Bloque separado y claro por si NO se pudo entregar -->
+        <section class="card ent-card ent-no-card">
+          <div class="row" style="justify-content:space-between">
+            <label class="ent-lbl" for="mot">¿No se pudo entregar?</label>
+            <a
+              v-if="tieneMotivoNoEntrega"
+              href="#"
+              class="ent-clear-link"
+              @click.prevent="limpiarMotivo"
+            >
+              Quitar motivo
+            </a>
+          </div>
+
+          <select
+            id="mot"
+            v-model="motivoSeleccionado"
+            class="inp ent-select"
+            @change="errorMotivo = ''"
+          >
+            <option v-for="motivo in motivosNoEntrega" :key="motivo" :value="motivo">
+              {{ motivo }}
+            </option>
+          </select>
+
+          <div v-if="errorMotivo" class="ent-error">
+            {{ errorMotivo }}
+          </div>
+
+          <button
+            type="button"
+            :class="['btn', tieneMotivoNoEntrega ? 'd' : 's', 'ent-sec-btn']"
+            @click="marcarNoEntregado"
+          >
+            Reportar como no entregado
+          </button>
+        </section>
+      </template>
+
+      <template v-else>
+        <div class="ent-resultado-nota" :class="{ err: detalle.estado === 'No entregado' }">
+          {{ detalle.horaEntrega }}
+        </div>
+        <RouterLink class="btn s ent-main-btn" to="/repartidor/pedidos">
+          Volver a mis pedidos
+        </RouterLink>
+      </template>
+    </main>
+  </template>
 </template>
 
 <style scoped>
-.entrega-card {
-  border-radius: 16px;
-  padding: 16px 18px;
-  gap: 8px;
+.ent-header {
+  padding: 20px 18px;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--bd);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.entrega-inp {
-  height: 46px;
+.ent-back-btn {
+  align-self: flex-start;
+  padding: 8px 16px;
   border-radius: 12px;
+  background: var(--sf);
+  border: 2px solid var(--bd);
+  color: var(--act);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.entrega-btn {
-  height: 50px;
-  border-radius: 12px;
-  font: 500 15px 'Poppins', sans-serif;
+.ent-title {
+  font-size: 26px;
+  font-weight: 800;
 }
 
-.ln {
+.ent-badge {
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ent-badge.pend {
+  background: #FFF0E0;
+  color: #C94C08;
+}
+
+.ent-badge.ok {
+  background: var(--oks);
+  color: var(--ok);
+}
+
+.ent-badge.err {
+  background: var(--bg2);
+  color: var(--tx2);
+}
+
+.ent-body {
+  padding: 20px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+}
+
+.ent-card {
+  border-radius: 20px;
+  padding: 20px;
+  gap: 12px;
+  border: 2px solid var(--bd);
+}
+
+.ent-cliente {
+  font-size: 23px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.ent-direccion {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--tx);
+  line-height: 1.4;
+}
+
+.ent-ref {
+  font-size: 16.5px;
+  color: var(--tx2);
+  line-height: 1.35;
+}
+
+.ent-call-btn {
+  width: 100%;
+  height: 54px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.ent-cobro-destacado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--acs);
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+.ent-cobro-destacado span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--act);
+}
+
+.ent-cobro-destacado strong {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--act);
+}
+
+.ent-lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.ent-ln {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  font-size: 14px;
+  gap: 12px;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.ent-main-btn {
+  width: 100%;
+  height: 62px;
+  border-radius: 16px;
+  font-size: 19px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ent-main-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ent-no-card {
+  background: var(--bg2);
+}
+
+.ent-lbl {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.ent-clear-link {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--act);
+  text-decoration: none;
+}
+
+.ent-select {
+  height: 54px;
+  border-radius: 14px;
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.ent-sec-btn {
+  width: 100%;
+  height: 56px;
+  border-radius: 14px;
+  font-size: 17.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ent-error {
+  font-size: 16px;
+  font-weight: 700;
+  color: #C94C08;
+}
+
+.ent-resultado-nota {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--oks);
+  color: var(--ok);
+  text-align: center;
+}
+
+.ent-resultado-nota.err {
+  background: #FFF3E8;
+  color: #9A3412;
 }
 </style>

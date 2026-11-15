@@ -2,12 +2,13 @@
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { CATEGORIAS_VENTA_MOCK, PRODUCTOS_MENU_VENTA_MOCK, reconstruirMenuVenta } from '@/services/ventas.service'
-import { EXTRAS_DISPONIBLES_MOCK, ROLLOS_PROMO_MOCK } from '@/services/catalogo.service'
+import { EXTRAS_DISPONIBLES_MOCK, ROLLOS_PROMO_MOCK, PRODUCTOS_MOCK } from '@/services/catalogo.service'
 import { esPromo2x1ValidaHoy } from '@/services/promociones.service'
 import StepIndicator from '@/components/ui/StepIndicator.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import StatusTag from '@/components/ui/StatusTag.vue'
+import ProductoVectorArt from '@/components/ui/ProductoVectorArt.vue'
 import CarritoLateral from '@/modules/ventas/components/CarritoLateral.vue'
 
 const cartStore = useCartStore()
@@ -16,13 +17,9 @@ const categoriaActiva = ref('Todo')
 
 reconstruirMenuVenta()
 
-// Solo Lunes y Martes es válida la promoción 2x1
 const promoValidaHoy = computed(() => esPromo2x1ValidaHoy())
 
-const categoriasVisibles = computed(() => {
-  if (promoValidaHoy.value) return CATEGORIAS_VENTA_MOCK
-  return CATEGORIAS_VENTA_MOCK.filter((c) => c !== 'Promociones')
-})
+const categoriasVisibles = computed(() => CATEGORIAS_VENTA_MOCK)
 
 const productosMenu = computed(() => PRODUCTOS_MENU_VENTA_MOCK)
 
@@ -36,6 +33,11 @@ const busquedaRolloPromo = ref('')
 const showPaqueteSushiModal = ref(false)
 const rollosElegidosPaqSushi = ref([])
 const busquedaRolloPaq = ref('')
+
+// Modal para Promociones Generales (Combos con descuento, Postre gratis, Especial de fin de semana, etc.)
+const showPromoGeneralModal = ref(false)
+const promoGeneralActiva = ref(null)
+const platilloPromoElegidoId = ref(null)
 
 // Modal Selección de Carnes (Pollo, Cerdo, Res) para Yakimeshis, Teppanyakis, Plato Kin, etc.
 const OPCIONES_CARNE = ['Pollo', 'Cerdo', 'Res']
@@ -55,6 +57,15 @@ const carnesModalExtras = ref([])
 // Mini ventana de descripción / ingredientes del platillo
 const showInfoProdModal = ref(false)
 const productoInfoActivo = ref(null)
+const recienAgregados = ref({})
+
+function marcarProductoAgregado(prodId) {
+  if (!prodId) return
+  recienAgregados.value[prodId] = true
+  setTimeout(() => {
+    delete recienAgregados.value[prodId]
+  }, 750)
+}
 
 function abrirInfoProducto(prod) {
   productoInfoActivo.value = prod
@@ -67,6 +78,8 @@ function accionarDesdeInfoModal(prod) {
     abrirModalPromo2x1()
   } else if (prod.tipoCard === 'paquete_sushi') {
     abrirModalPaqueteSushi()
+  } else if (prod.tipoCard === 'promo_general') {
+    abrirModalPromoGeneral(prod)
   } else if (prod.tipoCard === 'variantes') {
     agregarVarianteSeleccionada(prod)
   } else {
@@ -74,19 +87,129 @@ function accionarDesdeInfoModal(prod) {
   }
 }
 
+const opcionesPlatillosPromoGeneral = computed(() => {
+  const promo = promoGeneralActiva.value?.promoData
+  if (!promo) return []
+  const nombresIncluidos = Array.isArray(promo.productosIncluidos) ? promo.productosIncluidos : []
+  const nomPromo = (promo.nombre || '').toLowerCase()
+  const descPromo = (promo.descuento || '').toLowerCase()
+  const esPostreGratis = nomPromo.includes('postre') || descPromo.includes('gratis')
+  const matchPct = (promo.descuento || promo.nombre || '').match(/(\d+)\s*%/)
+  const pctDescuento = matchPct ? Number(matchPct[1]) : 0
+
+  let baseProductos = PRODUCTOS_MOCK.filter(
+    (p) => p.activo !== false && nombresIncluidos.some((n) => n.toLowerCase() === p.nombre.toLowerCase())
+  )
+  if (baseProductos.length === 0) {
+    if (esPostreGratis) {
+      baseProductos = PRODUCTOS_MOCK.filter((p) => p.activo !== false && p.categoria === 'Postres')
+    } else {
+      baseProductos = PRODUCTOS_MOCK.filter((p) => p.activo !== false && p.categoria === 'Paquetes' && p.precio)
+    }
+  }
+
+  return baseProductos.map((p) => {
+    const precioOrig = Number(p.precio) || 140
+    let descuentoMonto = 0
+    let etiquetaCorto = 'Promo'
+    if (esPostreGratis) {
+      descuentoMonto = precioOrig
+      etiquetaCorto = 'Postre gratis'
+    } else if (pctDescuento > 0) {
+      descuentoMonto = Math.round((precioOrig * pctDescuento) / 100)
+      etiquetaCorto = `-${pctDescuento}%`
+    } else {
+      descuentoMonto = Math.min(precioOrig, 30)
+      etiquetaCorto = 'Precio especial'
+    }
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      precioOriginal: precioOrig,
+      descuentoMonto,
+      precioFinal: Math.max(0, precioOrig - descuentoMonto),
+      etiquetaCorto
+    }
+  })
+})
+
+const esPromoActivaPostreGratis = computed(() => {
+  const promo = promoGeneralActiva.value?.promoData
+  if (!promo) return false
+  const nom = (promo.nombre || '').toLowerCase()
+  const desc = (promo.descuento || '').toLowerCase()
+  return nom.includes('postre') || desc.includes('gratis')
+})
+
+const validacionPromoGeneral = computed(() => {
+  const promo = promoGeneralActiva.value?.promoData
+  if (!promo) return { valido: false, mensaje: '' }
+
+  if (esPromoActivaPostreGratis.value) {
+    if (cartStore.tienePostreGratisEnCarrito) {
+      return {
+        valido: false,
+        tipo: 'error',
+        mensaje: 'Validación: Ya aplicaste 1 Postre gratis en este pedido (máximo 1 por cuenta).'
+      }
+    }
+    const montoActual = cartStore.subtotalSinPostreGratis
+    if (montoActual < 400) {
+      const faltante = Math.max(0, 400 - montoActual)
+      return {
+        valido: false,
+        tipo: 'error',
+        mensaje: `Requisito: La compra mínima para Postre gratis es de $400.00. Actualmente el pedido suma $${montoActual.toFixed(2)} (faltan $${faltante.toFixed(2)}).`
+      }
+    }
+    return {
+      valido: true,
+      tipo: 'ok',
+      mensaje: `✓ Compra mínima cubierta ($${montoActual.toFixed(2)} ≥ $400.00). Elige el postre de cortesía.`
+    }
+  }
+
+  return {
+    valido: Boolean(platilloPromoElegidoId.value),
+    tipo: 'ok',
+    mensaje: `✓ Promoción válida (${promo.dia}). Selecciona el paquete o platillo participante.`
+  }
+})
+
+function abrirModalPromoGeneral(prod) {
+  if (prod.promoData?.productosIncluidos?.length === 1 && prod.promoData.productosIncluidos[0] === 'Paquete Sushi') {
+    abrirModalPaqueteSushi()
+    return
+  }
+  promoGeneralActiva.value = prod
+  const lista = opcionesPlatillosPromoGeneral.value
+  platilloPromoElegidoId.value = lista[0]?.id || null
+  showPromoGeneralModal.value = true
+}
+
+function confirmarPromoGeneral() {
+  if (!validacionPromoGeneral.value.valido) return
+  const elegido = opcionesPlatillosPromoGeneral.value.find((p) => p.id === platilloPromoElegidoId.value)
+  if (!elegido || !promoGeneralActiva.value?.promoData) return
+  const ok = cartStore.agregarPromoGeneralAlCarrito(promoGeneralActiva.value.promoData, elegido)
+  if (ok !== false) {
+    marcarProductoAgregado(promoGeneralActiva.value.id)
+    showPromoGeneralModal.value = false
+  }
+}
+
 const productosFiltrados = computed(() => {
   const q = busqueda.value.trim().toLowerCase()
   return productosMenu.value.filter((prod) => {
-    if (!promoValidaHoy.value && prod.tipoCard === 'promo_2x1') {
-      return false
-    }
     if (categoriaActiva.value !== 'Todo' && prod.categoria !== categoriaActiva.value) {
       return false
     }
     if (q) {
       return (
         prod.nombre.toLowerCase().includes(q) ||
-        (prod.categoria && prod.categoria.toLowerCase().includes(q))
+        (prod.categoria && prod.categoria.toLowerCase().includes(q)) ||
+        (prod.subtitulo && prod.subtitulo.toLowerCase().includes(q))
       )
     }
     return true
@@ -241,6 +364,7 @@ function elegirTamanoVariante(prod, variante) {
 function agregarVarianteSeleccionada(prod) {
   const activa = prod.variantes.find((v) => v.activa) || prod.variantes[0]
   cartStore.agregarProducto(prod, { variante: activa })
+  marcarProductoAgregado(prod.id)
 }
 
 function clickAgregarProducto(prod) {
@@ -249,6 +373,7 @@ function clickAgregarProducto(prod) {
     return
   }
   cartStore.agregarProducto(prod)
+  marcarProductoAgregado(prod.id)
 }
 
 function inicializarSlotsCarnes(num) {
@@ -272,6 +397,7 @@ function confirmarModalCarnes() {
   cartStore.agregarProducto(productoParaCarnes.value, {
     carnes: [...carnesSlots.value]
   })
+  marcarProductoAgregado(productoParaCarnes.value.id)
   showCarnesModal.value = false
 }
 
@@ -404,7 +530,7 @@ function limpiarBusquedaVenta() {
         <div
           v-for="prod in productosFiltrados"
           :key="prod.id"
-          class="card venta-item-card"
+          :class="['card', 'venta-item-card', { 'card-added-flash': recienAgregados[prod.id] }]"
         >
           <div :class="['ph', { no: !prod.tieneFoto && !prod.imagenUrl }]">
             <img
@@ -414,28 +540,20 @@ function limpiarBusquedaVenta() {
               loading="lazy"
               class="prod-img"
             >
-            <svg
+            <ProductoVectorArt
               v-else
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
+              :nombre="prod.nombre"
+              :categoria="prod.categoria"
+              :subtitulo="prod.subtitulo || prod.descripcion || prod.presentacion"
+              :tipo="prod.tipoCard"
+            />
 
             <button
               type="button"
               class="prod-info-btn"
-              title="Ver qué lleva este platillo"
-              aria-label="Ver qué lleva este platillo"
-              @click.stop="abrirInfoProducto(prod)"
+              title="Ver información y condiciones"
+              aria-label="Ver información y condiciones"
+              @click.stop.prevent="abrirInfoProducto(prod)"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -471,6 +589,22 @@ function limpiarBusquedaVenta() {
             </a>
           </div>
 
+          <!-- Otras Promociones (Combos con descuento, Postre gratis, Especial fin de semana) -->
+          <div
+            v-else-if="prod.tipoCard === 'promo_general'"
+            class="row"
+            style="justify-content:space-between;margin-top:auto"
+          >
+            <span class="pr">{{ prod.etiquetaCorto || 'Promo' }}</span>
+            <a
+              :class="['btn', 'p', 'sm', { 'btn-added-flash': recienAgregados[prod.id] }]"
+              href="#"
+              @click.prevent="abrirModalPromoGeneral(prod)"
+            >
+              {{ recienAgregados[prod.id] ? '✓ Agregado' : 'Elegir' }}
+            </a>
+          </div>
+
           <!-- Bebidas con tamaños (Té Verde y Kalpis) -->
           <div
             v-else-if="prod.tipoCard === 'variantes'"
@@ -488,12 +622,12 @@ function limpiarBusquedaVenta() {
               </span>
             </div>
             <a
-              class="btn s sm"
+              :class="['btn', 's', 'sm', { 'btn-added-flash': recienAgregados[prod.id] }]"
               href="#"
               style="width:100%"
               @click.prevent="agregarVarianteSeleccionada(prod)"
             >
-              Agregar
+              {{ recienAgregados[prod.id] ? '✓ Agregado' : 'Agregar' }}
             </a>
           </div>
 
@@ -515,11 +649,11 @@ function limpiarBusquedaVenta() {
                 Extras
               </a>
               <a
-                class="btn s sm"
+                :class="['btn', 's', 'sm', { 'btn-added-flash': recienAgregados[prod.id] }]"
                 href="#"
                 @click.prevent="clickAgregarProducto(prod)"
               >
-                {{ prod.numCarnes > 0 ? 'Elegir' : 'Agregar' }}
+                {{ recienAgregados[prod.id] ? '✓ Agregado' : prod.numCarnes > 0 ? 'Elegir' : 'Agregar' }}
               </a>
             </div>
           </div>
@@ -827,8 +961,19 @@ function limpiarBusquedaVenta() {
     width="380px"
   >
     <template v-if="productoInfoActivo">
-      <div v-if="productoInfoActivo.imagenUrl" class="info-modal-photo">
-        <img :src="productoInfoActivo.imagenUrl" :alt="productoInfoActivo.nombre">
+      <div class="info-modal-photo">
+        <img
+          v-if="productoInfoActivo.imagenUrl"
+          :src="productoInfoActivo.imagenUrl"
+          :alt="productoInfoActivo.nombre"
+        >
+        <ProductoVectorArt
+          v-else
+          :nombre="productoInfoActivo.nombre"
+          :categoria="productoInfoActivo.categoria"
+          :subtitulo="productoInfoActivo.subtitulo || productoInfoActivo.descripcion || productoInfoActivo.presentacion"
+          :tipo="productoInfoActivo.tipoCard"
+        />
       </div>
 
       <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
@@ -841,9 +986,12 @@ function limpiarBusquedaVenta() {
           </div>
           <h2 style="font-size:18px;font-weight:600;line-height:1.25">{{ productoInfoActivo.nombre }}</h2>
         </div>
-        <span style="font-size:17px;font-weight:600;color:var(--act);white-space:nowrap">
+        <span style="font-size:16px;font-weight:600;color:var(--act);white-space:nowrap">
           <template v-if="productoInfoActivo.tipoCard === 'promo_2x1'">2x1</template>
           <template v-else-if="productoInfoActivo.tipoCard === 'paquete_sushi'">5x4</template>
+          <template v-else-if="productoInfoActivo.tipoCard === 'promo_general'">
+            {{ productoInfoActivo.etiquetaCorto || 'Promo' }}
+          </template>
           <template v-else-if="productoInfoActivo.tipoCard === 'variantes'">
             {{ productoInfoActivo.variantes?.map((v) => v.label).join(' / ') }}
           </template>
@@ -852,10 +1000,33 @@ function limpiarBusquedaVenta() {
       </div>
 
       <div class="info-desc-box">
-        <span class="info-desc-label">Ingredientes / Qué incluye</span>
+        <span class="info-desc-label">
+          {{ productoInfoActivo.categoria === 'Promociones' ? 'Beneficio y platillos participantes' : 'Ingredientes / Qué incluye' }}
+        </span>
         <p style="font-size:14px;line-height:1.5;color:var(--tx)">
           {{ productoInfoActivo.descripcion || productoInfoActivo.subtitulo || 'Sin descripción adicional registrada para este platillo.' }}
         </p>
+        <div
+          v-if="productoInfoActivo.promoData?.productosIncluidos?.length"
+          style="display:flex;flex-direction:column;gap:6px;padding-top:6px;border-top:1px solid var(--bd)"
+        >
+          <span class="info-desc-label">
+            {{
+              productoInfoActivo.tipoCard === 'promo_2x1'
+                ? `Todos los rollos incluidos (${productoInfoActivo.promoData.productosIncluidos.length})`
+                : `Platillos participantes (${productoInfoActivo.promoData.productosIncluidos.length})`
+            }}
+          </span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto;padding-right:4px">
+            <StatusTag
+              v-for="nomP in productoInfoActivo.promoData.productosIncluidos"
+              :key="nomP"
+              style="height:24px;font-size:11.5px"
+            >
+              {{ nomP }}
+            </StatusTag>
+          </div>
+        </div>
       </div>
 
       <div class="row" style="justify-content:flex-end;gap:8px;padding-top:2px">
@@ -863,7 +1034,95 @@ function limpiarBusquedaVenta() {
           Cerrar
         </BaseButton>
         <BaseButton variant="p" href="#" @click.prevent="accionarDesdeInfoModal(productoInfoActivo)">
-          {{ productoInfoActivo.numCarnes > 0 || productoInfoActivo.tipoCard === 'promo_2x1' || productoInfoActivo.tipoCard === 'paquete_sushi' ? 'Elegir' : 'Agregar al pedido' }}
+          {{
+            productoInfoActivo.numCarnes > 0 ||
+            productoInfoActivo.tipoCard === 'promo_2x1' ||
+            productoInfoActivo.tipoCard === 'paquete_sushi' ||
+            productoInfoActivo.tipoCard === 'promo_general'
+              ? 'Elegir'
+              : 'Agregar al pedido'
+          }}
+        </BaseButton>
+      </div>
+    </template>
+  </BaseModal>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL APLICAR PROMOCIÓN (Descuento en paquetes, Postre gratis, Especial)  -->
+  <!-- ========================================================================= -->
+  <BaseModal
+    v-model="showPromoGeneralModal"
+    aria-label="Aplicar promoción al pedido"
+    width="480px"
+  >
+    <template v-if="promoGeneralActiva">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <h2 style="font-size:18px;font-weight:600">{{ promoGeneralActiva.nombre }}</h2>
+          <span class="sub" style="font-size:12.5px">
+            {{ promoGeneralActiva.promoData?.descuento }} · Aplica: {{ promoGeneralActiva.promoData?.dia }}
+          </span>
+        </div>
+        <StatusTag variant="ok">{{ promoGeneralActiva.etiquetaCorto }}</StatusTag>
+      </div>
+
+      <!-- Mensaje de validación de requisitos de la promoción -->
+      <div
+        :style="{
+          padding: '10px 12px',
+          borderRadius: '10px',
+          fontSize: '12.5px',
+          fontWeight: '500',
+          lineHeight: '1.45',
+          background: validacionPromoGeneral.tipo === 'ok' ? 'var(--oks)' : 'var(--acs)',
+          color: validacionPromoGeneral.tipo === 'ok' ? 'var(--ok)' : '#C94C08',
+          border: validacionPromoGeneral.tipo === 'ok' ? '1px solid var(--ok)' : '1px solid #F26A1B'
+        }"
+      >
+        {{ validacionPromoGeneral.mensaje }}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:270px;overflow-y:auto;padding-right:2px">
+        <label
+          v-for="item in opcionesPlatillosPromoGeneral"
+          :key="item.id"
+          :class="['rollo-pick-item', { selected: platilloPromoElegidoId === item.id }]"
+          style="cursor:pointer;padding:10px 14px"
+        >
+          <span class="row" style="gap:10px;min-width:0">
+            <input
+              v-model="platilloPromoElegidoId"
+              type="radio"
+              :value="item.id"
+              style="width:16px;height:16px;accent-color:#C94C08;flex-shrink:0"
+            >
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+              <strong style="font-size:13.5px">{{ item.nombre }}</strong>
+              <span v-if="item.descripcion" class="sub" style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px">
+                {{ item.descripcion }}
+              </span>
+            </span>
+          </span>
+          <span class="row" style="gap:8px;flex-shrink:0">
+            <span class="sub" style="text-decoration:line-through;font-size:12px">${{ item.precioOriginal }}</span>
+            <strong style="color:var(--act);font-size:14.5px">
+              {{ item.precioFinal === 0 ? 'GRATIS' : `$${item.precioFinal}` }}
+            </strong>
+          </span>
+        </label>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;gap:10px;padding-top:6px;border-top:1px solid var(--bd)">
+        <BaseButton variant="s" href="#" @click.prevent="showPromoGeneralModal = false">
+          Cancelar
+        </BaseButton>
+        <BaseButton
+          variant="p"
+          href="#"
+          :disabled="!platilloPromoElegidoId || !validacionPromoGeneral.valido"
+          @click.prevent="confirmarPromoGeneral"
+        >
+          Aplicar promoción
         </BaseButton>
       </div>
     </template>
@@ -942,6 +1201,7 @@ function limpiarBusquedaVenta() {
   position: absolute;
   top: 6px;
   right: 6px;
+  z-index: 5;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -1015,6 +1275,20 @@ function limpiarBusquedaVenta() {
   padding: 0 12px;
   font-size: 13px;
   border-radius: 8px;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.btn-added-flash {
+  background: #F26A1B !important;
+  color: #FFFFFF !important;
+  border-color: #F26A1B !important;
+  box-shadow: 0 0 0 4px rgba(242, 106, 27, 0.25), 0 6px 14px rgba(242, 106, 27, 0.35) !important;
+  transform: scale(1.05);
+}
+
+.card-added-flash {
+  border-color: #F26A1B !important;
+  box-shadow: 0 0 0 3px rgba(242, 106, 27, 0.18) !important;
 }
 
 .nm {

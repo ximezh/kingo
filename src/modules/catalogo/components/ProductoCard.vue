@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import ProductoVectorArt from '@/components/ui/ProductoVectorArt.vue'
 
 const props = defineProps({
   producto: {
@@ -20,6 +21,9 @@ const props = defineProps({
 const emit = defineEmits(['ver-info'])
 
 const precioTexto = computed(() => {
+  if (props.producto.precioTextoPromo) {
+    return props.producto.precioTextoPromo
+  }
   if (props.producto.variantes && props.producto.variantes.length > 0) {
     return props.producto.variantes.map((v) => `${v.nombre} $${v.precio}`).join(' / ')
   }
@@ -28,11 +32,16 @@ const precioTexto = computed(() => {
   }
   return `$${props.producto.precio}`
 })
+
+const rutaEdicion = computed(() => {
+  if (props.producto.editarRuta) return props.producto.editarRuta
+  return `/admin/productos/editar?id=${props.producto.id}`
+})
 </script>
 
 <template>
   <div :class="['card', 'prod-card', { 'is-off': producto.activo === false }]">
-    <div :class="['ph', { no: !producto.imagenUrl && !producto.tieneFoto, 'has-img': Boolean(producto.imagenUrl) }]">
+    <div class="ph has-img">
       <img
         v-if="producto.imagenUrl"
         :src="producto.imagenUrl"
@@ -40,21 +49,12 @@ const precioTexto = computed(() => {
         loading="lazy"
         class="prod-img"
       >
-      <svg
+      <ProductoVectorArt
         v-else
-        width="26"
-        height="26"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="8" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
+        :nombre="producto.nombre"
+        :categoria="producto.categoria"
+        :subtitulo="producto.descripcion || producto.presentacion || ''"
+      />
 
       <button
         type="button"
@@ -70,17 +70,22 @@ const precioTexto = computed(() => {
         </svg>
       </button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:2px">
+
+    <div style="display:flex;flex-direction:column;gap:3px">
       <div style="font-size:14px;font-weight:600;line-height:1.3">{{ producto.nombre }}</div>
-      <span v-if="producto.categoria" class="sub" style="font-size:11.5px">
-        {{ producto.categoria }}{{ producto.activo === false ? ' · Inactivo' : '' }}
+      <span v-if="producto.categoria" class="sub" style="font-size:11.5px;font-weight:500;color:var(--act)">
+        {{ producto.esPromocion && producto.diaCorto ? `Promociones · ${producto.diaCorto}` : producto.categoria }}{{ producto.activo === false ? ' · Inactivo' : '' }}
       </span>
+      <p v-if="producto.descripcion && !producto.esPromocion" class="prod-desc-line">
+        {{ producto.descripcion }}
+      </p>
     </div>
+
     <div v-if="editable" class="row" style="justify-content:space-between;margin-top:auto;padding-top:4px">
-      <span style="font-size:14.5px;font-weight:600;color:var(--act)">{{ precioTexto }}</span>
-      <RouterLink class="edit" :to="`/admin/productos/editar?id=${producto.id}`">Editar</RouterLink>
+      <span style="font-size:14px;font-weight:600;color:var(--act)">{{ precioTexto }}</span>
+      <RouterLink class="edit" :to="rutaEdicion">Editar</RouterLink>
     </div>
-    <div v-else style="font-size:14.5px;font-weight:600;color:var(--act);margin-top:auto;padding-top:4px">
+    <div v-else style="font-size:14px;font-weight:600;color:var(--act);margin-top:auto;padding-top:4px">
       {{ precioTexto }}
     </div>
   </div>
@@ -114,17 +119,7 @@ const precioTexto = computed(() => {
   height: 112px;
   overflow: hidden;
   position: relative;
-}
-
-.ph.no {
-  background: var(--bg2);
-  color: var(--tx2);
-  opacity: 0.7;
-}
-
-.ph.has-img {
   padding: 0;
-  opacity: 1;
 }
 
 .prod-img {
@@ -134,10 +129,22 @@ const precioTexto = computed(() => {
   display: block;
 }
 
+.prod-desc-line {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tx2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
 .prod-info-btn {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 2;
   width: 26px;
   height: 26px;
   border-radius: 50%;
