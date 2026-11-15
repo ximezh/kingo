@@ -12,11 +12,13 @@ import {
 } from '@/services/entregas.service'
 import { empleadosState, actualizarEstadoRutaRepartidor, guardarEmpleadosStorage } from '@/services/empleados.service'
 import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
+import { sincronizarConNube } from '@/services/cloudSync'
 
 const route = useRoute()
 const router = useRouter()
 
 depurarEstadoEntregas()
+sincronizarConNube(true)
 
 // Sincronizar cualquier venta "Por asignar" del historial que aún no esté en la cola
 for (const v of HISTORIAL_VENTAS_MOCK) {
@@ -160,11 +162,13 @@ function asignarPedido() {
     return
   }
 
+  const tsAhora = Date.now()
   const venta = HISTORIAL_VENTAS_MOCK.find((v) => v.folio === folioActual)
   if (venta) {
     venta.estado = 'Por entregar'
     venta.estadoVariant = ''
     venta.repartidorAsignado = repObj.nombre
+    venta._updatedAt = tsAhora
   }
 
   const idx = pedidos.value.findIndex((p) => p.folio === folioActual)
@@ -183,7 +187,8 @@ function asignarPedido() {
       repartidor: repObj.nombre,
       horaEntrega: null,
       lineas: ped.lineas || [],
-      envio: ped.envio || '$35'
+      envio: ped.envio || '$35',
+      _updatedAt: tsAhora
     })
     pedidos.value.splice(idx, 1)
   }
@@ -193,6 +198,7 @@ function asignarPedido() {
 
   guardarEntregasStorage()
   guardarVentasStorage()
+  sincronizarConNube(true)
 
   fetch('http://localhost:3000/api/entregas/asignar', {
     method: 'POST',

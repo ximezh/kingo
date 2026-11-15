@@ -7,6 +7,7 @@ import {
   formatearFechaHoraVenta
 } from '@/services/ventas.service'
 import { PEDIDOS_POR_ASIGNAR_MOCK, guardarEntregasStorage } from '@/services/entregas.service'
+import { sincronizarConNube } from '@/services/cloudSync'
 import { useAuthStore } from '@/stores/auth'
 
 export const TIPO_PEDIDO_INFO = {
@@ -386,9 +387,14 @@ export const useCartStore = defineStore('cart', () => {
           ? datosCliente.value.nombreLlevar || 'Cliente mostrador'
           : datosCliente.value.nombreRecibe || 'Laura Méndez'
 
-    const nuevoFolioNum = HISTORIAL_VENTAS_MOCK.length + 1
+    const maxFolioActual = HISTORIAL_VENTAS_MOCK.reduce((max, v) => {
+      const n = Number(String(v.folio || '').replace(/\D/g, '')) || 0
+      return Math.max(max, n)
+    }, 6)
+    const nuevoFolioNum = maxFolioActual + 1
     const folioNuevo = `#${String(nuevoFolioNum).padStart(4, '0')}`
     const ahora = new Date()
+    const tsAhora = Date.now()
     const fechaISO = obtenerFechaISOLocal(ahora)
     const horaStr = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
     const cajeroAtendio =
@@ -435,7 +441,8 @@ export const useCartStore = defineStore('cart', () => {
       cantidadProductos: items.value.reduce((acc, it) => acc + it.cantidad, 0),
       itemsSnapshot: items.value.map((it) => ({ ...it })),
       estado: tipoPedido.value === 'domicilio' ? 'Por asignar' : 'Completada',
-      estadoVariant: tipoPedido.value === 'domicilio' ? '' : 'ok'
+      estadoVariant: tipoPedido.value === 'domicilio' ? '' : 'ok',
+      _updatedAt: tsAhora
     }
 
     ultimaVentaRegistrada.value = nuevaVenta
@@ -453,10 +460,13 @@ export const useCartStore = defineStore('cart', () => {
         envio: `$${envio.value}`,
         lineas: lineasPedido,
         telefonoDireccion: `${datosCliente.value.telefono} · ${datosCliente.value.direccion}`,
-        referencia: datosCliente.value.referencia ? `Referencia: ${datosCliente.value.referencia}` : ''
+        referencia: datosCliente.value.referencia ? `Referencia: ${datosCliente.value.referencia}` : '',
+        _updatedAt: tsAhora
       })
       guardarEntregasStorage()
     }
+
+    sincronizarConNube(true)
 
     // Guardar en PostgreSQL (base de datos 'kingo') a través del Backend Node.js
     fetch('http://localhost:3000/api/ventas', {

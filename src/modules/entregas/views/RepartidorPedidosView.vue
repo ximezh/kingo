@@ -1,12 +1,17 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import PedidoRepartidorCard from '@/modules/entregas/components/PedidoRepartidorCard.vue'
 import { pedidosRepartidorState } from '@/services/entregas.service'
+import { sincronizarConNube } from '@/services/cloudSync'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+onMounted(() => {
+  sincronizarConNube(true)
+})
 
 const activeTab = ref('por_entregar')
 

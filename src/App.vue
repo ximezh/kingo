@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { iniciarSincronizacionTiempoReal, sincronizarConNube } from '@/services/cloudSync'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -30,6 +31,7 @@ function iniciarAnimacionEntrada() {
 watch(
   () => route.path,
   (newPath, oldPath) => {
+    sincronizarConNube(true)
     const entraAlLogin = newPath === '/login' && oldPath && oldPath !== '/login'
     const entraAlRepartidor =
       newPath.startsWith('/repartidor') && (!oldPath || !oldPath.startsWith('/repartidor'))
@@ -41,6 +43,7 @@ watch(
 
 onMounted(() => {
   iniciarAnimacionEntrada()
+  iniciarSincronizacionTiempoReal()
   window.addEventListener('kingo:replay-intro', iniciarAnimacionEntrada)
 })
 

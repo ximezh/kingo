@@ -1,12 +1,17 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { pedidosRepartidorState, guardarEntregasStorage } from '@/services/entregas.service'
 import { HISTORIAL_VENTAS_MOCK, guardarVentasStorage } from '@/services/ventas.service'
 import { actualizarEstadoRutaRepartidor } from '@/services/empleados.service'
+import { sincronizarConNube } from '@/services/cloudSync'
 
 const route = useRoute()
 const router = useRouter()
+
+onMounted(() => {
+  sincronizarConNube(true)
+})
 
 const detalle = computed(() => {
   const paramId = route.params.id
@@ -42,21 +47,25 @@ function limpiarMotivo() {
 function marcarEntregado() {
   if (!detalle.value || tieneMotivoNoEntrega.value) return
 
+  const tsAhora = Date.now()
   const horaStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
   detalle.value.estado = 'Entregado'
   detalle.value.horaEntrega = `Entregado a las ${horaStr} hrs`
+  detalle.value._updatedAt = tsAhora
 
   const venta = HISTORIAL_VENTAS_MOCK.find((v) => v.folio === detalle.value.folio)
   if (venta) {
     venta.estado = 'Entregado'
     venta.estadoVariant = 'ok'
+    venta._updatedAt = tsAhora
   }
 
   actualizarEstadoRutaRepartidor(detalle.value.repartidor || 'Carlos R.', false)
   guardarEntregasStorage()
   guardarVentasStorage()
+  sincronizarConNube(true)
 
-  fetch(`http://localhost:3000/api/entregas/${String(detalle.value.folio).replace('#', '')}/estado`, {
+  fetch(`/api/entregas/${String(detalle.value.folio).replace('#', '')}/estado`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ estado: 'entregado' })
@@ -71,20 +80,24 @@ function marcarNoEntregado() {
     errorMotivo.value = 'Primero elige arriba el motivo de no entrega.'
     return
   }
+  const tsAhora = Date.now()
   detalle.value.estado = 'No entregado'
   detalle.value.horaEntrega = `No entregado: ${motivoSeleccionado.value}`
+  detalle.value._updatedAt = tsAhora
 
   const venta = HISTORIAL_VENTAS_MOCK.find((v) => v.folio === detalle.value.folio)
   if (venta) {
     venta.estado = 'No entregado'
     venta.estadoVariant = 'off'
+    venta._updatedAt = tsAhora
   }
 
   actualizarEstadoRutaRepartidor(detalle.value.repartidor || 'Carlos R.', false)
   guardarEntregasStorage()
   guardarVentasStorage()
+  sincronizarConNube(true)
 
-  fetch(`http://localhost:3000/api/entregas/${String(detalle.value.folio).replace('#', '')}/estado`, {
+  fetch(`/api/entregas/${String(detalle.value.folio).replace('#', '')}/estado`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ estado: 'no_entregado', motivoNoEntrega: motivoSeleccionado.value })
