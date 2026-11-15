@@ -8,16 +8,15 @@ function normalizarPedidosRepartidor(lista) {
   if (!Array.isArray(lista)) return []
   return lista.map((p) => {
     const venta = HISTORIAL_VENTAS_MOCK.find((v) => v.folio === p.folio)
-    // Si la venta en el historial ya está Completada, Entregado, No entregado o es semilla histórica, no debe seguir "Por entregar"
+    // Solo si la venta existe en el historial y ya está marcada explícitamente como finalizada o semilla histórica
     if (
       p.estado === 'Por entregar' &&
-      (!venta ||
-        venta.esSemillaHistorica ||
-        ['Completada', 'Entregado', 'No entregado'].includes(venta.estado))
+      venta &&
+      (venta.esSemillaHistorica || ['Completada', 'Entregado', 'No entregado'].includes(venta.estado))
     ) {
       return {
         ...p,
-        estado: venta?.estado === 'No entregado' ? 'No entregado' : 'Entregado'
+        estado: venta.estado === 'No entregado' ? 'No entregado' : 'Entregado'
       }
     }
     return p

@@ -48,12 +48,16 @@ function aplicarEstadoRemoto(remoto) {
         mapaRep.set(p.folio, { ...p })
         continue
       }
-      const rPrev = rangoEstado(prev.estado)
-      const rNew = rangoEstado(p.estado)
       const tsPrev = Number(prev._updatedAt) || 0
       const tsNew = Number(p._updatedAt) || 0
-      if (rNew > rPrev || (rNew === rPrev && tsNew >= tsPrev)) {
+      if (tsNew > tsPrev) {
         mapaRep.set(p.folio, { ...prev, ...p })
+      } else if (tsNew === tsPrev) {
+        const rPrev = rangoEstado(prev.estado)
+        const rNew = rangoEstado(p.estado)
+        if (rNew >= rPrev) {
+          mapaRep.set(p.folio, { ...prev, ...p })
+        }
       }
     }
     pedidosRepartidorState.value = [...mapaRep.values()]
@@ -69,12 +73,16 @@ function aplicarEstadoRemoto(remoto) {
         mapaVentas.set(v.folio, normalizarVentaFecha(v))
         continue
       }
-      const rPrev = rangoEstado(prev.estado)
-      const rNew = rangoEstado(v.estado)
       const tsPrev = Number(prev._updatedAt) || 0
       const tsNew = Number(v._updatedAt) || 0
-      if (rNew > rPrev || (rNew === rPrev && tsNew >= tsPrev)) {
+      if (tsNew > tsPrev) {
         mapaVentas.set(v.folio, normalizarVentaFecha({ ...prev, ...v }))
+      } else if (tsNew === tsPrev) {
+        const rPrev = rangoEstado(prev.estado)
+        const rNew = rangoEstado(v.estado)
+        if (rNew >= rPrev) {
+          mapaVentas.set(v.folio, normalizarVentaFecha({ ...prev, ...v }))
+        }
       }
     }
 

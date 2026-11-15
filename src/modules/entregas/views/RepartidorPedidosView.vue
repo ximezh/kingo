@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import PedidoRepartidorCard from '@/modules/entregas/components/PedidoRepartidorCard.vue'
@@ -8,9 +8,30 @@ import { sincronizarConNube } from '@/services/cloudSync'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const actualizando = ref(false)
+let timerRef = null
+
+async function refrescarManual() {
+  if (actualizando.value) return
+  actualizando.value = true
+  try {
+    await sincronizarConNube(true)
+  } finally {
+    setTimeout(() => {
+      actualizando.value = false
+    }, 400)
+  }
+}
 
 onMounted(() => {
-  sincronizarConNube(true)
+  refrescarManual()
+  timerRef = setInterval(() => {
+    sincronizarConNube(true)
+  }, 2500)
+})
+
+onUnmounted(() => {
+  if (timerRef) clearInterval(timerRef)
 })
 
 const activeTab = ref('por_entregar')
@@ -48,9 +69,25 @@ function handleLogout() {
       </div>
     </div>
 
-    <button type="button" class="rep-salir-btn" @click="handleLogout">
-      Salir
-    </button>
+    <div class="row" style="gap:8px">
+      <button
+        type="button"
+        class="rep-refresh-btn"
+        :class="{ 'is-spinning': actualizando }"
+        :title="actualizando ? 'Actualizando pedidos...' : 'Actualizar pedidos'"
+        @click="refrescarManual"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+
+      <button type="button" class="rep-salir-btn" @click="handleLogout">
+        Salir
+      </button>
+    </div>
   </header>
 
   <main class="rep-page-body">
@@ -127,6 +164,35 @@ function handleLogout() {
   font-size: 21px;
   font-weight: 800;
   color: var(--tx);
+}
+
+.rep-refresh-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 2px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rep-refresh-btn:active {
+  transform: scale(0.95);
+  background: var(--bg);
+}
+
+.rep-refresh-btn.is-spinning svg {
+  animation: spin 0.7s linear infinite;
+  color: #F26A1B;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .rep-salir-btn {

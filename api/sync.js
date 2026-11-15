@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 
+const CLOUD_SYNC_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1e0f817ef33ff'
 const TMP_FILE = path.join(os.tmpdir(), 'kingo_cloud_sync_v1.json')
 
 function rangoEstadoPedido(estado) {
@@ -12,7 +13,7 @@ function rangoEstadoPedido(estado) {
   return 0
 }
 
-function leerEstadoInicial() {
+function leerEstadoLocal() {
   if (globalThis.__KINGO_CLOUD_STATE__) {
     return globalThis.__KINGO_CLOUD_STATE__
   }
@@ -26,7 +27,7 @@ function leerEstadoInicial() {
       }
     }
   } catch {
-    // ignore read errors
+    // ignore
   }
   globalThis.__KINGO_CLOUD_STATE__ = {
     ventas: [],
@@ -38,12 +39,46 @@ function leerEstadoInicial() {
   return globalThis.__KINGO_CLOUD_STATE__
 }
 
-function guardarEstadoPersistente(state) {
+function guardarEstadoLocal(state) {
   globalThis.__KINGO_CLOUD_STATE__ = state
   try {
     fs.writeFileSync(TMP_FILE, JSON.stringify(state), 'utf8')
   } catch {
-    // ignore write errors
+    // ignore
+  }
+}
+
+async function leerEstadoPersistente() {
+  try {
+    const res = await fetch(CLOUD_SYNC_URL, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(3500)
+    })
+    if (res.ok) {
+      const json = await res.json()
+      if (json?.data && typeof json.data === 'object') {
+        globalThis.__KINGO_CLOUD_STATE__ = json.data
+        guardarEstadoLocal(json.data)
+        return json.data
+      }
+    }
+  } catch {
+    // Si falla la red remota, recurrir a la caché local
+  }
+  return leerEstadoLocal()
+}
+
+async function guardarEstadoPersistente(state) {
+  guardarEstadoLocal(state)
+  try {
+    await fetch(CLOUD_SYNC_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'kingo_sync', data: state }),
+      signal: AbortSignal.timeout(4000)
+    })
+  } catch {
+    // ignore network put errors
   }
 }
 
@@ -65,12 +100,16 @@ export function fusionarEstadoKinGo(actual, entrante) {
       mapaRep.set(item.folio, { ...item })
       continue
     }
-    const rPrev = rangoEstadoPedido(prev.estado)
-    const rNew = rangoEstadoPedido(item.estado)
     const tsPrev = Number(prev._updatedAt) || 0
     const tsNew = Number(item._updatedAt) || 0
-    if (rNew > rPrev || (rNew === rPrev && tsNew >= tsPrev)) {
-      mapaRep.set(item.folio, { ...prev, ...item, _updatedAt: Math.max(tsPrev, tsNew, Date.now()) })
+    if (tsNew > tsPrev) {
+      mapaRep.set(item.folio, { ...prev, ...item })
+    } else if (tsNew === tsPrev) {
+      const rPrev = rangoEstadoPedido(prev.estado)
+      const rNew = rangoEstadoPedido(item.estado)
+      if (rNew >= rPrev) {
+        mapaRep.set(item.folio, { ...prev, ...item })
+      }
     }
   }
   const pedidosRepartidor = [...mapaRep.values()]
@@ -84,19 +123,23 @@ export function fusionarEstadoKinGo(actual, entrante) {
       mapaVentas.set(v.folio, { ...v })
       continue
     }
-    const rPrev = rangoEstadoPedido(prev.estado)
-    const rNew = rangoEstadoPedido(v.estado)
     const tsPrev = Number(prev._updatedAt) || 0
     const tsNew = Number(v._updatedAt) || 0
-    if (rNew > rPrev || (rNew === rPrev && tsNew >= tsPrev)) {
-      mapaVentas.set(v.folio, { ...prev, ...v, _updatedAt: Math.max(tsPrev, tsNew, Date.now()) })
+    if (tsNew > tsPrev) {
+      mapaVentas.set(v.folio, { ...prev, ...v })
+    } else if (tsNew === tsPrev) {
+      const rPrev = rangoEstadoPedido(prev.estado)
+      const rNew = rangoEstadoPedido(v.estado)
+      if (rNew >= rPrev) {
+        mapaVentas.set(v.folio, { ...prev, ...v })
+      }
     }
   }
 
   // Asegurar que si un pedido ya está en pedidosRepartidor, la venta refleje ese mismo avance
   for (const ped of pedidosRepartidor) {
     const v = mapaVentas.get(ped.folio)
-    if (v && rangoEstadoPedido(ped.estado) > rangoEstadoPedido(v.estado)) {
+    if (v && rangoEstadoPedido(ped.estado) >= rangoEstadoPedido(v.estado)) {
       v.estado = ped.estado
       v.estadoVariant = ped.estado === 'Entregado' ? 'ok' : ped.estado === 'No entregado' ? 'off' : ''
       if (ped.repartidor) v.repartidorAsignado = ped.repartidor
@@ -172,7 +215,7 @@ export default async function handler(req, res) {
     return res.status(200).end()
   }
 
-  const estadoActual = leerEstadoInicial()
+  const estadoActual = await leerEstadoPersistente()
 
   if (req.method === 'POST') {
     let body = req.body
@@ -184,7 +227,7 @@ export default async function handler(req, res) {
       }
     }
     const nuevoEstado = fusionarEstadoKinGo(estadoActual, body || {})
-    guardarEstadoPersistente(nuevoEstado)
+    await guardarEstadoPersistente(nuevoEstado)
     return res.status(200).json({ ok: true, state: nuevoEstado })
   }
 
